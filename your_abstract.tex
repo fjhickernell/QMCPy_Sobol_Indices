@@ -1,0 +1,33 @@
+\documentclass[12pt]{article}
+
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{xcolor}
+
+\setlength{\textwidth}{16cm}
+\setlength{\textheight}{22.6cm}
+\setlength{\topmargin}{-0.8in}
+\setlength{\headheight}{0.0in}
+\setlength{\headsep}{0.0in}
+\setlength{\oddsidemargin}{0.0in}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\setlength{\parindent}{0pt}
+\pagestyle{empty}
+
+\def\thebibliography#1{\list
+  {[\arabic{enumi}]}{\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+    \advance\leftmargin\labelsep\usecounter{enumi}}}
+
+\newcommand{\speaker}[2]{{\color{orange}{\bf Speaker: #1\ #2}\\~\\}}
+\renewcommand{\title}[1]{{\Large\bf #1}\\[0.3cm]}
+\renewcommand{\author}[4]{\begin{center}\vspace*{-0.6cm}
+  \emph{#1\ #2}\\ #3, \texttt{#4} \end{center}}
+\renewcommand{\abstract}[1]{#1}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\input samo_2022_abstract_template.tex
+
+\end{document}
