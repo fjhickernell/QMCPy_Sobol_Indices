@@ -1,0 +1,27 @@
+      SUBROUTINE SIFT(N,XV)
+C*****PERFORM ASCENDING SORT ON ARRAY XV
+      DIMENSION  XV(N)
+      M=N
+ 1000 CONTINUE
+      M=M/2
+      IF(M) 3000, 9000, 3000
+ 3000 CONTINUE
+      K=N-M
+      J=1
+ 4000 CONTINUE
+      I=J
+ 5000 CONTINUE
+      L=I+M
+      IF(XV(L)-XV(I)) 6000, 7000, 7000
+ 6000 CONTINUE
+      A=XV(I)
+      XV(I)=XV(L)
+      XV(L)=A
+      I=I-M
+      IF(I) 7000, 7000, 5000
+ 7000 CONTINUE
+      J=J + 1
+      IF(J-K) 4000, 4000, 1000
+ 9000 CONTINUE
+      RETURN
+      END

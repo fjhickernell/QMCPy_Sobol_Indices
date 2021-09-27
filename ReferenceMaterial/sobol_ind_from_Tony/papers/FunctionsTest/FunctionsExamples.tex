@@ -1,0 +1,128 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\begin{document}
+
+\title{Functions Test}
+\date{}
+\maketitle
+
+\section*{Ishigami}
+
+\bigskip
+
+\begin{equation*}
+f \colon \left\lbrace \begin{array}{ccccc}
+ [-\pi,\pi]^3 & \to & \mathbb{R} \\
+  x=(x_1,x_2,x_3) & \mapsto &  \sin(x_1)+7  \sin^2(x_2)+0.1 \ x_3^4 \sin(x_1)\\
+\end{array} \right.
+\end{equation*}
+
+\bigskip
+
+First order Sobol' indices: $$(S_1=0.31391, S_2=0.44241, S_3=0)$$
+
+\bigskip
+
+Total-effect Sobol' indices: $$(S_1^T=0.55759, S_2^T=0.44241, S_3^T=0.24368)$$
+
+\bigskip
+
+\section*{Bratley \it{et al.}}
+
+\bigskip
+
+\begin{equation*}
+f \colon \left\lbrace \begin{array}{ccccc}
+ [0,1]^d & \to & \mathbb{R} \\
+  x=(x_1,\dots,x_d) & \mapsto &  \sum \limits_{i=1}^d (-1)^i \prod \limits_{j=1}^i x_j \\
+\end{array} \right.
+\end{equation*}
+
+\bigskip
+
+Here we choose $d=6$:
+
+\bigskip
+
+First order Sobol' indices: $$(S_1=0.65286, S_2=0.17913, S_3=0.03701, S_4=0.01332, S_5=0.00148, S_6=0.00148)$$
+
+\bigskip
+
+Total-effect Sobol' indices: $$(S_1^T=0.73965,S_2^T=0.26591, S_3^T=0.07642, S_4^T=0.03431, S_5^T=0.00624, S_6^T=0.00624)$$
+
+\bigskip
+
+\section*{Sobol' g-function}
+
+\bigskip
+
+\begin{equation*}
+f \colon \left\lbrace \begin{array}{ccccc}
+ [0,1]^d & \to & \mathbb{R} \\
+  x=(x_1,\dots,x_d) & \mapsto &  \prod \limits_{i=1}^{d}g_i(X_i)\\
+\end{array} \right.
+\end{equation*}
+
+\begin{flalign*}
+\text{where} && &g_i(X_i)=\frac{\left |4X_i-2 \right | + a_i}{1 + a_i}, \ a_i \geq 0.&
+\end{flalign*}
+
+\bigskip
+
+Here we choose $d=6$ and $a=(0,0.5,3,9,99,99)$:
+
+\bigskip
+
+First order Sobol' indices: $$(S_1=.58678, S_2=0.26079, S_3=0.03667, S_4=0.00587, S_5=0.00006, S_6=0.00006)$$
+
+\bigskip
+
+Total-effect Sobol' indices: $$(S_1^T=0.69009,S_2^T=0.35617, S_3^T=0.05633, S_4^T=0.00917, S_5^T=0.00009, S_6^T=0.00009)$$
+
+\bigskip
+
+\section*{Morokoff and Caflisch}
+
+\bigskip
+
+\begin{equation*}
+f \colon \left\lbrace \begin{array}{ccccc}
+ [0,1]^d & \to & \mathbb{R} \\
+  x=(x_1,\dots,x_d) & \mapsto &  {(1+\frac{1}{d})}^d \prod \limits_{i=1}^d (x_i)^{1/d}\\
+\end{array} \right.
+\end{equation*}
+
+
+\bigskip
+
+Here we choose $d=6$:
+
+\bigskip
+
+First order Sobol' indices: $$(S_1=0.15819, S_2=0.15819, S_3=0.15819, S_4=0.15819, S_5=0.15819, S_6=0.15819)$$
+
+\bigskip
+
+Total-effect Sobol' indices: $$(S_1^T=0.17537,S_2^T=0.17537, S_3^T=0.17537, S_4^T=0.17537, S_5^T=0.17537, S_6^T=0.17537)$$
+
+\bigskip
+
+\section*{A few remarks}
+
+\begin{enumerate}[.]
+\item true values of Sobol' indices have been rounded to five decimal places
+\item the number of parameters $d$ for the last three functions can be changed (although new Sobol' indices must be calculated with the Maple code)
+\item following the previous remark, other functions test can be studied. the associated Sobol' indices can be calculated with the Maple code (as long as the function is simple enough to integrate)
+\end{enumerate}
+
+\bigskip
+
+\section*{Comments, Questions ?}
+
+\end{document}

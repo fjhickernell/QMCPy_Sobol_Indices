@@ -1,0 +1,13 @@
+C
+       CONTIM         = XVAR( 1)
+       RLI            = XVAR( 2)
+       RLC            = XVAR( 3)
+       VREAL (1)      = XVAR( 4)
+       XPATH (1)      = XVAR( 5)
+       RET   ( 1,1,1) = XVAR( 6)
+       FC    (1)      = XVAR( 7)
+       VREAL (2)      = XVAR( 8)
+       XPATH (2)      = XVAR( 9)
+       RET   ( 1,1,2) = XVAR(10)
+       FC    (2)      = XVAR(11)
+       STFLOW         = XVAR(12)

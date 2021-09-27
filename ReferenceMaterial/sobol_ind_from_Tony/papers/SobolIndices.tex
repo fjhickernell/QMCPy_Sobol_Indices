@@ -1,0 +1,178 @@
+\documentclass[]{amsart}
+
+\usepackage{array,colortbl}
+\usepackage{amsmath,amsfonts,amssymb,bm,listings} % no amsthm, Springer defines Theorem, Lemma, etc themselves
+\usepackage{xspace}
+\usepackage[autolinebreaks]{mcode}
+\input FJHDef
+\newcommand{\oerr}{e}
+\newcommand{\verr}{\boldsymbol{\varepsilon}}
+\newcommand{\tverr}{\tilde{\boldsymbol{\varepsilon}}}
+\newcommand{\terr}{\tilde{\varepsilon}}
+\newcommand{\vI}{\bvec{I}}
+\newcommand{\tx}{\tilde{x}}
+
+
+\begin{document}
+\title{Adaptive Computation of Sobol' Indices}
+\maketitle
+
+\noindent To:  Cl\'ementine Prieur (U. Josef Fourier), Llu\'is Antoni Jim\'enez Rugama (IIT)
+
+\bigskip
+
+Today Cl\'ementine discussed the possibility of using \texttt{cubSobol\_g} to calculate Sobol sensitivity indices for functions $f : [0,1]^d \to \reals$.  Here is some sample code where we showed proof of concept.
+
+%\lstinputlisting{ProgramsImages/SobolIndexExample.m}
+
+There are a few next steps: 
+
+\begin{enumerate}
+\item Sobol' indices can be written in terms of $2d-1$-dimensional integrals.   Cl\'ementine will work out what those integrals are.
+
+\item The problem that we want to solve is to find $s_1, \ldots, s_p$ such that 
+\[
+\max_{j=1, \ldots, p} \abs{S_j(I_1(f), \ldots, I_q(f)) - s_j} \le \varepsilon,
+\]
+ where the $I_\ell$ are integrals of $f$ or maybe powers of $f$ or something that Cl\'ementine will work out.  Tony and I need to think about how to modify \texttt{cubSobol\_g}.
+ 
+My suggestion is that for each $m = m_{\min}, m_{\min}+1, \ldots$ we compute our data-based error bounds for the Sobol' cubatures $\hI_{\ell,m}(f)$ using $n=2^m$ points, i.e., 
+\[
+\abs{I_\ell(f) - \hI_{\ell,m}(f)} \le \oerr_{\ell,m}(f).
+\]
+We also identify $\hS$ such that 
+\[
+\hS_j(b_1, \ldots, b_q, c_1, \ldots, c_q) \le S(a_1, \ldots, a_q) \le \hS_j(c_1, \ldots, c_q, b_1, \ldots, b_q) 
+\]
+for all $b_\ell \le a_\ell \le c_\ell$.  When we get 
+\begin{multline}\label{stopping_crit}
+\hS_j(\hI_{1,m}(f) + \oerr_{1,m}(f), \ldots,\hI_{q,m}(f) + \oerr_{q,m}(f), \ldots \\
+\hI_{1,m}(f) - \oerr_{1,m}(f), \ldots,\hI_{q,m}(f) - \oerr_{q,m}(f)) \\
+ - \hS_j(\hI_{1,m}(f) - \oerr_{1,m}(f), \ldots,\hI_{q,m}(f) - \oerr_{q,m}(f), \ldots \\
+ \hI_{1,m}(f) + \oerr_{1,m}(f), \ldots,\hI_{q,m}(f) + \oerr_{q,m}(f))   \le 2\varepsilon, \quad j = 1, \ldots, p
+\end{multline}
+we may stop and choose 
+\begin{multline*}
+s_j = \frac{1}{2}\Bigl[\hS_j(\hI_{1,m}(f) + \oerr_{1,m}(f), \ldots,\hI_{q,m}(f) + \oerr_{q,m}(f), \ldots \\
+\hI_{1,m}(f) - \oerr_{1,m}(f), \ldots,\hI_{q,m}(f) - \oerr_{q,m}(f)) \\
++ \hS_j(\hI_{1,m}(f) - \oerr_{1,m}(f), \ldots,\hI_{q,m}(f) - \oerr_{q,m}(f), \ldots \\
+ \hI_{1,m}(f) + \oerr_{1,m}(f), \ldots,\hI_{q,m}(f) + \oerr_{q,m}(f)) \Bigr]
+ \end{multline*}
+ 
+\item Cl\'ementine will talk to her student to involve him in this project.
+
+\end{enumerate}
+
+$$\mu=\mathbb{E}\left[f(\underline{X})\right]=\int_{[0,1]^d} f(\underline{x}) d \underline{x} \, .$$
+$$\Var \left(f(\underline{X})\right)=\int_{[0,1]^d}\left(f(\underline{x})-\mu\right)^2d \underline{x} =\int_{[0,1]^d}\left(f(\underline{x})\right)^2d \underline{x} - \mu^2 \, .$$
+$$\mu_j(x)=\mathbb{E}\left[f(\underline{X})|X_j=x\right]=\int_{[0,1]^{d-1}} f(\underline{t}_{-j},x)d\underline{t}_{-j} \, .$$
+$$\begin{array}{rcl}
+\mathbb{E}\left\{ \Var \left(f(\underline{X})|X_j\right)\right\} & = &\int_{0,1]^d}\left[f(\underline{x}\right]^2 d \underline{x} - \int_0^1 \mu_j^2(x) dx  \\
+&=& \int_{[0,1]^d}\left[f(\underline{x}\right]^2 d \underline{x} - \int_{[0,1]^{2d-1}}f(\underline{x})f(\underline{x}'_{-j},x_j)d \underline{x} d \underline{x}'_{-j} \, . 
+\end{array}$$
+
+$$\mu_{-j}(\underline{x}_{-j})=\mathbb{E}\left[f(\underline{X})|X_{-j}=\underline{x}_{-j}\right]=\int_0^1 f({t}_{j},\underline{x}_{-j})d {t}_{j} \, .$$
+$$\begin{array}{rcl}
+\mathbb{E}\left\{ \Var \left(f(\underline{X})|\underline{X}_{-j}\right)\right\} & = &\int_{[0,1]^d}\left[f(\underline{x}\right]^2 d \underline{x} - \int_{[0,1]^{d-1}} \mu_{-j}^2(\underline{x}_{-j}) d \underline{x}_{-j}  \\
+&=& \int_{[0,1]^d}\left[f(\underline{x}\right]^2 d \underline{x} - \int_{[0,1]^{d+1}}f(\underline{x})f(x'_{j},\underline{x}_{-j})d \underline{x} d {x}'_{j} \, . 
+\end{array}$$
+
+
+\bigskip
+
+$$S_{j}=1-\frac{\mathbb{E}\left\{ \Var \left(f(\underline{X})|X_j\right)\right\}}{\Var\left(f(\underline{X})\right)}= \frac{N_j}{D}\, .$$
+$$S_{j}^{\textup{tot}}=\frac{\mathbb{E}\left\{ \Var \left(f(\underline{X})|\underline{X}_{-j}\right)\right\} }{\Var\left(f(\underline{X})\right)}=\frac{N_j^{\textup{tot}}}{D}\, .$$
+
+
+As $N_j$, $N_j^{\textup{tot}}$ and $D$ can be written as sums of integrals,
+one can guarantee with the existing code the existence of error terms $\tilde{\oerr}_{j,m}(f)$, $\tilde{\oerr}_{j,m}^{\textup{tot}}(f)$ and $\tilde{\oerr}_m(f)$ such that
+
+$$\hat{N}_{j,m}-\tilde{\oerr}_{j,m}(f) \leq N_j \leq \hat{N}_{j,m}+\tilde{\oerr}_{j,m}(f)  \, ,$$
+$$\hat{N}_{j,m}^{\textup{tot}}-\tilde{\oerr}_{j,m}^{\textup{tot}}(f) \leq N_j^{\textup{tot}} \leq \hat{N}_{j,m}^{\textup{tot}}+\tilde{\oerr}_{j,m}^{\textup{tot}}(f) \, ,$$
+$$\hat{D}_{m}-\tilde{\oerr}_{m}(f) \leq D \leq \hat{D}_{m}+\tilde{\oerr}_{m}(f)  \, .$$
+
+
+Thus
+
+\begin{equation}\label{err_bound_j}
+\frac{\hat{N}_{j,m}-\tilde{\oerr}_{j,m}(f)}{\hat{D}_{m}+\tilde{\oerr}_{m}(f) } \leq \frac{N_j}{D} \leq \frac{\hat{N}_{j,m}+\tilde{\oerr}_{j,m}(f)}{\hat{D}_{m}-\tilde{\oerr}_{m}(f) }\, ,
+\end{equation}
+\begin{equation}\label{err_bound_jtot}
+\frac{\hat{N}_{j,m}^{\textup{tot}}-\tilde{\oerr}_{j,m}^{\textup{tot}}(f) }{\hat{D}_{m}+\tilde{\oerr}_{m}(f)} \leq \frac{N_{j}^{\textup{tot}}}{D} \leq \frac{ \hat{N}_{j,m}^{\textup{tot}}+\tilde{\oerr}_{j,m}^{\textup{tot}}(f)}{\hat{D}_{m}-\tilde{\oerr}_{m}(f)} \, .
+\end{equation}
+
+\bigskip
+
+Any questions, clarifications, or comments?
+
+Domains for integrals $N_j$ and $N_j^{\textup{tot}}$ can be rearranged to consider them as a single integral:
+\begin{align*}
+\mathbb{E}\left[ \Var \left(f(\underline{X})|X_j\right)\right] & = \int_{[0,1)^d}f(\underline{x})^2 d \underline{x} - \int_{[0,1)^{2d-1}}f(\underline{x})f(\underline{x}'_{-j},x_j)d \underline{x} d \underline{x}'_{-j} \\
+& = \int_{[0,1)^{2d-1}}\left[f(\underline{x})^2-f(\underline{x})f(\underline{x}'_{-j},x_j)\right] d \underline{x} d \underline{x}'_{-j} \, . 
+\end{align*}
+
+\begin{align*}
+\mathbb{E}\left[ \Var \left(f(\underline{X})|\underline{X}_{-j}\right)\right] & = \int_{[0,1)^d}f(\underline{x})^2 d \underline{x} - \int_{[0,1)^{d+1}}f(\underline{x})f(x'_{j},\underline{x}_{-j})d \underline{x} d {x}'_{j} \\
+& = \int_{[0,1)^{d+1}}\left[f(\underline{x})^2-f(\underline{x})f(x'_{j},\underline{x}_{-j})\right] d \underline{x} d {x}'_{j} \, . 
+\end{align*}
+
+However, because $D$ is a nonlinear combination of integrals over different domains, it needs to be split into 2 parts:
+
+\begin{align*}
+\Var \left(f(\underline{X})\right) & = \int_{[0,1)^d}f(\underline{x})^2 d \underline{x} - \left(\int_{[0,1)^d}f(\underline{x}) d \underline{x}\right)^2 \\
+& = D_1 - D_2^2 \, .
+\end{align*}
+
+Namely $a_1^{(j)} :=\mathbb{E}\left[ \Var \left(f(\underline{X})|X_j\right)\right]$, $a_2^{(j)} := \mathbb{E}\left[ \Var \left(f(\underline{X})|\underline{X}_{-j}\right)\right]$, $a_3^{(j)} := D_1$ and $a_4^{(j)} := D_2$ (we will spare the ${(j)}$ notation for simplicity), we have:
+
+\begin{equation}
+S(a_1,\dots,a_4)=1-\frac{a_1}{a_3-a_4^2} \; , \qquad S^\textup{tot}(a_1,\dots,a_4)=\frac{a_2}{a_3-a_4^2} \, .
+\end{equation}
+that directly leads to,
+\begin{equation}\label{functionals_stop_criteria}
+\hS(b_1,\dots,b_4,c_1,\dots,c_4)=1-\frac{c_1}{b_3-c_4^2} \; , \qquad \hS^\textup{tot}(b_1,\dots,b_4,c_1,\dots,c_4)=\frac{b_2}{c_3-b_4^2} \, .
+\end{equation}
+Remark that if we have some a priori knowledge of $a_4$, $c_4^2$ can be replaced by $c_4$ and $b_4^2$ by $b_4$ depending on whether $a_4 \leq 1$ or $a_4 \geq 1$ respectively. This would provide tighter bounds.
+
+According to \eqref{functionals_stop_criteria},
+\begin{equation}
+\hS^\textup{tot}(b_1,b_2,b_3,b_4,c_1,c_2,c_3,c_4) = 1 - \hS(b_1,c_1,c_3,c_4,b_2,c_2,b_3,b_4) \, .
+\end{equation}
+Hence, we do not really need a second estimator $\hS^\textup{tot}$. For further clarity, we can also set to $0$ the variables not affecting our estimators, $\hS(b_1,0,b_3,b_4,c_1,0,c_3,c_4)$ and $1-\hS(0,0,c_3,c_4,b_2,c_2,b_3,b_4)$.
+
+From here, we can use the stopping criteria proposed in \eqref{stopping_crit}.
+
+\section{Improving Error Bounds for Stopping Criteria}
+Consider the previous function ($\vx:=\vI$)
+\[
+f(\vx)=1-\frac{x_1}{x_2-x_3^2},\quad \vx\in[\tvx-\tverr,\tvx+\tverr].
+\]
+If our estimator is 
+\[
+\tf(\tvx)=\frac{1}{2}\left(f(\tx_1+\terr_1,\tx_2-\terr_2,\tx_3+\terr_3)+f(\tx_1-\terr_1,\tx_2+\terr_2,\tx_3-\terr_3)\right),
+\]
+we know that the error bound is clearly
+\begin{align*}
+\abs{f(\vx)-\tf(\tvx)}\leq\frac{1}{2} \abs{\frac{\tx_1+\terr_1}{\tx_2-\terr_2-\left(\tx_3+\terr_3\right)^2}-\frac{\tx_1-\terr_1}{\tx_2+\terr_2-\left(\tx_3-\terr_3\right)^2} }.
+\end{align*}
+If $\varepsilon_2=\varepsilon_3=0$, this error bound would directly be linear on $\varepsilon_1$. However, the difference in the denominators makes this error bound not clearly linearly convergent.
+
+If we consider the Taylor expansion of our function with $\vx-\tvx=\verr$ (the difference is the real error $\verr\in[-\tverr,\tverr]$):
+\begin{equation}
+f(\vx)=f(\tvx)+\nabla f(\tvx)^t\verr+\frac{1}{2}\verr^t Hf(\tvx) \verr + \mathcal{O}(\norm{\verr}^3),
+\end{equation}
+we can take the following estimator,
+\begin{align*}
+\tf(\tvx)&=\frac{1}{2}\left(f(\tvx)+\nabla f(\tvx)^t\tverr+\frac{1}{2}\tverr^t Hf(\tvx) \tverr + f(\tvx)+\nabla f(\tvx)^t(-\tverr)+\frac{1}{2}(-\tverr)^t Hf(\tvx) (-\tverr) \right)\\
+&=f(\tvx)+\frac{1}{2}\tverr^t Hf(\tvx) \tverr
+\end{align*}
+Thus, given that $Hf$ is symmetric, differentiable in the region of interest (denominator always positive), the error will be bounded by
+\begin{align*}
+\abs{f(\vx)-\tf(\tvx)}&=\abs{\nabla f(\tvx)^t\verr+\frac{1}{2}\left(\verr+\tverr\right)^t Hf(\tvx) \left(\verr-\tverr\right) + \mathcal{O}(\norm{\verr}^3)} \\
+&\leq \max_{\vy\in[\tvx-\tverr,\tvx+\tverr], \vz\in[-\tverr,\tverr]}\abs{\nabla f(\tvx)^t\vz+\frac{1}{2}(\vz+\tverr)^t Hf(\vy)(\vz-\tverr)}
+\end{align*}
+
+Clearly, because of signs the maximum $\vz$ is for $\vz=\{-\tilde{\varepsilon_1},\tilde{\varepsilon_2},-\tilde{\varepsilon_3}\}$.
+
+
+\end{document}

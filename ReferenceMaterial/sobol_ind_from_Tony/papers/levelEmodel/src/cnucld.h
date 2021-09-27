@@ -1,0 +1,7 @@
+C
+      COMMON /CNUCL /
+     &  ALAMB(MXNCHN,MXNELM)  , AM(MXNCHN,MXNELM)     , NEL(MXNCHN)   ,
+     &  NDC
+      COMMON /CNUCLC/
+     &  BNAME(MXNCHN,MXNELM)
+      CHARACTER  BNAME*8

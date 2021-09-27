@@ -1,0 +1,48 @@
+\documentclass[]{elsarticle}
+\setlength{\marginparwidth}{0.5in}
+\usepackage{amsmath,amssymb,amsthm,url,natbib,mathtools,bbm,extraipa,accents,graphicx}
+\usepackage{hyperref,xspace}
+
+\newcommand{\fudge}{\fC}
+\newcommand{\dtf}{\textit{\doubletilde{f}}}
+\newtheorem{lem}{Lemma}
+\theoremstyle{definition}
+\newtheorem{defin}{Definition}
+\newtheorem{algo}{Algorithm}
+\newcommand{\cube}{[0,1)^d}
+\DeclareMathOperator{\trail}{trail}
+\newcommand{\rf}{\mathring{f}}
+\newcommand{\rnu}{\mathring{\nu}}
+
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Minimizing the Number of Function Evaluations to Estimate Sobol' Indices Using Quasi-Monte Carlo Methods}
+\author{Llu\'is Antoni Jim\'enez Rugama\\
+Illinois Institute of Technology}
+%\address{Room E1-208, Department of Applied Mathematics, Illinois Institute of Technology,\\ 10 W.\ 32$^{\text{nd}}$ St., Chicago, IL 60616}
+\begin{abstract}
+
+Given the independent uniformly distributed random variables $X_1,\dots,X_d$, we are interested in measuring what part of the variance of $f(X_1,\dots,X_d)$ is explained by each input. For this study, we will consider the \emph{global sensitivity} indices defined by Sobol' in \cite{Sobol91}.
+
+\emph{First order} and \emph{total effect} indices provide most of the information about the variance of the model. However, since evaluating $f$ is usually time consuming, the estimation of these indices might be costly. If we require exactly $n$ data points to estimate each \emph{first order} and \emph{total effect} indice, the total number of function evaluations needed to estimate them, one by one, is $4dn$. This value can be easily reduced to $(2+d)n$. However, for the case of \emph{first order} indices, one can estimate them with only $2n$ function evaluations using the replication method \cite{Gilquin15}. We will explain how to use this method in conjunction with automatic quasi-Monte Carlo cubatures \cite{HicJim16a,JimHic16a} and provide some examples.
+
+\end{abstract}
+
+%\begin{keyword}
+%%% keywords here, in the form: keyword \sep keyword
+%%Multidimensional integration; Automatic algorithms; Guaranteed algorithms; Quasi-Monte Carlo; Rank-1 lattices; Fast transforms
+%%% MSC codes here, in the form: \MSC code \sep code
+%%% or \MSC[2008] code \sep code (2000 is the default)
+%
+%\end{keyword}
+
+\end{frontmatter}
+
+\bibliographystyle{abbrv}
+%\bibliographystyle{model1b-num-names.bst}
+\bibliography{FJH23,FJHown23,lluisantoni}
+
+\end{document}

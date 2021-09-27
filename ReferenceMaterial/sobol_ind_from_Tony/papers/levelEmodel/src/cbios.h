@@ -1,0 +1,3 @@
+C
+      COMMON /CBIOS /
+     &  TTC(MXNCHN,MXNELM)    , DSF(MXNCHN,MXNELM)    , STFLOW, RMW

@@ -1,0 +1,13 @@
+       PARAMETER ( MXNCHN =         2 )
+       PARAMETER ( MXNELM =         3 )
+       PARAMETER ( MXNLYS =         2 )
+       PARAMETER ( MXNRUN =    320000 )
+       PARAMETER ( MXNTIM =        26 )
+       PARAMETER ( MXNINT =         3 )
+       PARAMETER ( MXNCON =        18 )
+       PARAMETER ( MXNVAR =        12 )
+       PARAMETER  ( MXNOUT =    40 )
+       PARAMETER  ( MXNTPT = 10000 )
+       PARAMETER  ( MXNSPT =   500 )
+       PARAMETER  ( MXNRES =     2 )
+       PARAMETER  ( MXNGRP =     12 )  !max. number of partitions

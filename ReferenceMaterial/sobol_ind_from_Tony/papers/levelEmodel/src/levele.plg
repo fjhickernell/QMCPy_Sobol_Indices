@@ -1,0 +1,64 @@
+<html>
+<body>
+<pre>
+<h1>Build Log</h1>
+<h3>
+--------------------Configuration: levele - Win32 Debug--------------------
+</h3>
+<h3>Command Lines</h3>
+Creating temporary file "C:\DOCUME~1\taranst\LOCALS~1\Temp\RSP523.tmp" with contents
+[
+/check:bounds /compile_only /dbglibs /debug:full /nologo /traceback /warn:argument_checking /warn:nofileopt /module:"Debug/" /object:"Debug/" /pdbfile:"Debug/DF60.PDB" 
+"S:\LevelE\src\tres.f"
+"S:\LevelE\src\sift.f"
+"S:\LevelE\src\setzer.f"
+"S:\LevelE\src\nearf.f"
+"S:\LevelE\src\mgtime.f"
+"S:\LevelE\src\mgspac.f"
+"S:\LevelE\src\levele_model.f"
+"S:\LevelE\src\levele.f"
+"S:\LevelE\src\gtm1.f"
+"S:\LevelE\src\coeff.f"
+"S:\LevelE\src\bios.f"
+"S:\LevelE\src\batman.f"
+]
+Creating temporary file "C:\DOCUME~1\taranst\LOCALS~1\Temp\RSP524.tmp" with contents
+[
+kernel32.lib /nologo /subsystem:console /incremental:yes /pdb:"Debug/levele.pdb" /debug /machine:I386 /out:"Debug/levele.exe" /pdbtype:sept 
+.\Debug\batman.obj
+.\Debug\bios.obj
+.\Debug\coeff.obj
+.\Debug\gtm1.obj
+.\Debug\levele.obj
+.\Debug\levele_model.obj
+.\Debug\mgspac.obj
+.\Debug\mgtime.obj
+.\Debug\nearf.obj
+.\Debug\setzer.obj
+.\Debug\sift.obj
+.\Debug\tres.obj
+]
+Creating command line "link.exe @C:\DOCUME~1\taranst\LOCALS~1\Temp\RSP524.tmp"
+<h3>Output Window</h3>
+Compiling Fortran...
+S:\LevelE\src\tres.f
+S:\LevelE\src\sift.f
+S:\LevelE\src\setzer.f
+S:\LevelE\src\nearf.f
+S:\LevelE\src\mgtime.f
+S:\LevelE\src\mgspac.f
+S:\LevelE\src\levele_model.f
+S:\LevelE\src\levele.f
+S:\LevelE\src\gtm1.f
+S:\LevelE\src\coeff.f
+S:\LevelE\src\bios.f
+S:\LevelE\src\batman.f
+Linking...
+
+
+
+<h3>Results</h3>
+levele.exe - 0 error(s), 0 warning(s)
+</pre>
+</body>
+</html>

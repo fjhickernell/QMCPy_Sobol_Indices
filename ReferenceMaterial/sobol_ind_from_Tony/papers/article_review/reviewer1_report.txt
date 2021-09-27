@@ -1,0 +1,38 @@
+Dear Mr. Gilquin, We have received the reports from our advisors on your manuscript, "Reliable error estimation for Sobol' indices", which you submitted to Statistics and Computing.Based on the advice received, the Editor feels that your manuscript could be reconsidered for publication should you be prepared to incorporate major revisions. When preparing your revised manuscript, you are asked to carefully consider the reviewer comments which are attached, and submit a list of responses to the comments. Your list of responses should be uploaded as a file in addition to your revised manuscript.
+
+Please make sure to submit your editable source files (i. e. Word, TeX).In order to submit your revised manuscript electronically, please access the following web site: http://stco.edmgr.com/Your username is: ******** Your password is: ********Your revision is due on: Feb 23, 2017Please click "Author Login" to submit your revision.We look forward to receiving your revised manuscript.
+
+With kind regards,
+Sneha RahulJEO AssistantStatistics and Computing
+
+COMMENTS FOR THE AUTHOR:
+
+Associated Editor:
+
+Two very competent referees have reviewed this paper. They both think the paper contains and interesting contribution that can be publishable, but they also both raise important issues that must be addressed in the paper before it can be accepted in STCO. I think all the issues they raise are relevant. I also have a few additional minor questions:1. Page 4, left, line 52: What are $\kappa$ and $\bfk(\kappa)$ there? They seem undefined, and then many readers will not understand what follows.2. Page 4, right, line 30: Remove the period before (13).3. Page 4, right, lines 38--42: We find $\epsilon_{\hat I}$ in (14) and $\epsilon_{I}$ below (seems inconsistent).4. Section 5.2: These empirical results are for what parameters $d, T, S_0, \sigma, \rho, K$? I expect the behavior to depend strongly on the values of these parameters. E.g., large $d$ vs small $d$, large $T$ vs small $T$, large $\sigma$# vs small $\sigma$, etc. Also, this example is largely academic and not based on real-life data; I would not call it a "real-life" example. 5. The given examples are only in small dimensions. What about higher-dimensional "real-life" examples?-- Pierre L'Ecuyer
+
+===================================================================================================
+
+Reviewer #1: This paper proposes a method for estimating Sobol' indices for the purpose of sensitivity analysis. The method has two important features: it is based on Sobol' sequences to construct the designs at which the function of interest is evaluated, and it makes use of an error estimation method (from previous work involving the first author) that allows one to increase the number of function evaluations until a pre-set error threshold is met. The method is proposed in three variants and experimented with on a few test-functions as well as a common financial problem.Overall I think this paper is an interesting contribution that could be published in Statistics and Computing. However there are a few issues in the current manuscript that need to be addressed.
+
+1) Advantages of using this methodThe proposed method seems to work well in that with enough function evaluations, in most case the Sobol' indices can be estimated with good accuracy. In Section 2.3, the authors discuss a few alternative approaches and their disadvantages. They argue the main advantages of their approach are that 1) it guarantees the desired error threshold is met and 2) is not costly to compute. A concern with 1) is that we see later that sometimes the error threshold looks like it is not met (see item (3) below on the topic of the set C). A concern with 2) is that later in the paper, the discussion of the cost only focuses on the evaluation of the function f and seems to ignore the cost of constructing the error threshold (see item (2) below about "complete assessment of the cost"). In light of these concerns, simpler methods based on random sampling and straightforward confidence intervals become more attractive, as they have no extra cost and potentially a better assessment of how likely it is that the error is met (i.e., they provide a probabilistic statement about the error vs hoping parameters have been chosen so that the threshold is valid). I think this point should be discussed more thoroughly -- perhaps in the conclusion, or in Section 5 -- by the authors in order to convince the readers that the proposed method is indeed better.
+
+2) Complete assessment of the costSince only the different variants of this method are compared in the numerical results, it is fair to focus on the number of function evaluations to compare their respective costs. However, and as discussed in paper [4] from the list of references (in particular toward the end of Theorem 1 in [4]), the overall cost of this method should also include the Walsh function evaluations required to determine the quantity \tilde S_{l,m} used in the error calculation via (14). The authors should mention this and discuss this impact of this cost on comparisons that are made with other methods.
+
+3) The set CIn the section describing numerical results, choices are made for the parameters l* and r which in turn define the set (cone) of functions C for which the error threshold formula (14) used to derive the algorithm holds. There should be some information in the paper on whether or not the functions considered in this section can be shown to be in this cone. This is especially important in light of the results obtained on page 10 (column 1, lines 36-38), where it looks like the error threshold was not met by the algorithm. Is it because the function is not in C?
+
+Minor comments (page numbers refer to the actual paper and do not include the cover page)
+
+DONE *page 1, column 1, lines 23-24: "through" instead of "trough"
+DONE *page 2, column 2, equation (7): why use a biased estimator for sigma^2 ? 
+*page 4, column 2, equation (14): it is not clear how l ($\ell$) is chosen on the RHS, and whether or not the inequality holds for all \ell <= m or for some specific value of \ell? Please clarify.
+DONE *page 4, column 2, line 42: is it not instead "...the error bound $\epsilon_{\hat{I}}$" (hat on subscript I?)?
+DONE *page 5, column 2 line 55: not clear what you mean by "independent" in "two independent Sobol' sequences", especially if the designs are not randomized. From [4] it looks like you are using a 2d-dimensional Sobol' sequence and assign the first d coordinates to the first design and the next d ones to the second design. Please explain this more and state what properties you need for these sequences.
+*page 6, column 2, line 32: is the "iid" property valid across the indices i, i.e., the n vectors have to be independent? If so, this would invalidate the use of a Sobol' sequence to create these vectors, so please clarify this point.
+DONE *page 9, column 2 , "real case model". There are some imprecisions in this part: lines 15-16, it should be the "discounted payoff" and not just "payoff", rho is the risk-free interest rate (not just interest rate). More importantly, the authors directly give the discounted payoff in terms of the Brownian motion without stating what model is used for the stock price and without stating that for the purpose of pricing one should work under the risk-neutral measure. Please clarify this so that the financial motivation for this problem is properly done.
+
+==============================================================================================
+
+Reviewer #2: see attached report. 
+
+

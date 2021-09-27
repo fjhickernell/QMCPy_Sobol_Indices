@@ -1,0 +1,6 @@
+C
+      COMMON /CNAME /
+     &  CNAME(MXNCON) , VNAME(MXNVAR)
+      CHARACTER*15  CNAME, VNAME
+      COMMON /CHIM  /
+     &  IFHIM(MXNVAR)

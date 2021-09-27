@@ -1,0 +1,93 @@
+\documentclass[]{elsarticle}
+\setlength{\marginparwidth}{0.5in}
+\usepackage{amsmath,amssymb,amsthm,url,natbib,mathtools,bbm,extraipa,accents,graphicx}
+\usepackage{hyperref,xspace}
+
+\newcommand{\fudge}{\fC}
+\newcommand{\dtf}{\textit{\doubletilde{f}}}
+\newtheorem{lem}{Lemma}
+\theoremstyle{definition}
+\newtheorem{defin}{Definition}
+\newtheorem{algo}{Algorithm}
+\newcommand{\cube}{[0,1)^d}
+\DeclareMathOperator{\trail}{trail}
+\newcommand{\rf}{\mathring{f}}
+\newcommand{\rnu}{\mathring{\nu}}
+\newcommand{\vx}{\ensuremath{\mathbf{x}}}
+\newcommand{\vX}{\ensuremath{\mathbf{X}}}
+\newcommand{\vy}{\ensuremath{\mathbf{y}}}
+\newcommand{\vz}{\ensuremath{\mathbf{z}}}
+\newcommand{\reals}{\mathbb{R}}
+\newcommand{\diff}{\mathrm{d}}
+\newcommand{\hmu}{\hat{\mu}}
+\newcommand{\abs}[1]{\left \lvert #1 \right \rvert}
+
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Estimating first-order Sobol' indices using the replication method combined with Sobol' sequences}
+\author{Llu\'is Antoni Jim\'enez Rugama\\
+Joint work with Laurent Gilquin, \'Elise Arnaud, Fred J. Hickernell, Herv\'e Monod, and Cl\'ementine Prieur}
+%\address{Room E1-208, Department of Applied Mathematics, Illinois Institute of Technology,\\ 10 W.\ 32$^{\text{nd}}$ St., Chicago, IL 60616}
+\begin{abstract}
+
+Sobol' indices were introduced in 1991 \cite{•} and are used to measure what part of the overall variance of a model is explained by each subset of dimensions. We will consider that after the right transformation of our domain, we have a model of the form $f(\vX)$, where $\vX \sim \mathcal{U} [0,1]^d$.
+
+In practice, these indices are unknown and need to be estimated using function values that can be expensive to obtain. In the case of first-order indices, the main disadvantage is that we require $(d+1)n$ model evaluations to estimate all first-order indices, each index using $n$ data-sites. The replication procedure introduced in \cite{•} allows to estimate all first-order indices with $2n$ model evaluations using orthogonal arrays.
+
+In this work, we apply the replication method to the use of Sobol' sequences and extend our recent adaptive integration Sobol' rules \cite{HicJim16a} that choose $n$ automatically to ensure that $\abs{\mu - \hmu_n} \le \varepsilon$ for a user-specified error tolerance, $\varepsilon$.   
+
+
+
+
+%The theory of quasi-Monte Carlo cubature assumes that one is approximating $\mu = \mathbb{E}(Y)$ where $Y = f(\vX)$, $\vX \sim \mathcal{U} [0,1]^d$ by the sample mean $\hmu_n = n^{-1} \sum_{i=0}^{n-1} y_i$ with $y_i = f(\vx_i)$ for an evenly distributed sequence of data sites $\{\vx_i\}_{i=0}^{\infty}$.  Recent adaptive integration lattice rules\cite{JimHic16a} and Sobol' rules \cite{HicJim16a} choose $n$ automatically to ensure that $\abs{\mu - \hmu_n} \le \varepsilon$ for a user-specified error tolerance, $\varepsilon$.  
+%
+%However, there exist practical situations where $y_j$ depends not only on $x_j$ but on $\{x_i\}_{i=0}^{\infty}$.  An important example is the American option, where the payoff for the $j^{\text{th}}$ path depends on the exercise boundary, whose value can only be computed by knowing all paths.  In such cases, the integrand $f$ is better described as providing two sequences of outputs based on two sequences of inputs: $\bigl(\{y_i\}_{i=0}^{n_2-1},\{z_i\}_{i=n_1}^{n_2-1}\bigr) = f\bigl(\{x_i\}_{i=n_1}^{n_2-1},\{z_i\}_{i=0}^{n_1-1} \bigr)$ where $n_2 > n_1$.  The $z_i$ are scalar or vector intermediate outputs, e.g., the asset price paths.  Each time the $y_i$ are evaluated for a new batch of $x_i$, all previous $y_i$ must be updated as well.  In the American option pricing example this corresponds to updating the previous payoffs in light of a better approximated exercise boundary.
+%
+%Note that this difficulty only becomes evident when computing $\hmu_n$ for a sequence of $n$, as is done in our adaptive rules.  To handle this important scenario described above, we have modified the adaptive quasi-Monte Carlo cubatures in \cite{JimHic16a} and \cite{HicJim16a} appropriately.  We present examples of pricing American options using  the Longstaff and Schwartz \cite{LonSch01} method. We also discuss efficiency improvements such as principal component analysis to construct the Brownian paths and control variates.
+
+
+\end{abstract}
+
+%\begin{keyword}
+%Multidimensional integration \sep Quasi-Monte Carlo \sep American options \sep Automatic algorithms
+%\end{keyword}
+
+\end{frontmatter}
+
+\bibliographystyle{plain}
+%\bibliographystyle{model1b-num-names.bst}
+%\bibliography{FJH23,FJHown23}
+\def\Ignore#1{}\def\notesupp#1{}\def\Ignore#1{}\def\notesupp#1{}\providecommand{\HickernellFJ}{Hickernell\xspace}
+\begin{thebibliography}{1}
+
+\bibitem{CooNuy16a}
+R.~Cools and D.~Nuyens, editors.
+\newblock {\em {M}onte {C}arlo and Quasi-{M}onte {C}arlo Methods 2014}.
+  Springer-Verlag, Berlin, 2015+.
+
+\bibitem{HicJim16a}
+F.~J. \HickernellFJ and {\relax Ll}.~A. {Jim\'enez Rugama}.
+\newblock Reliable adaptive cubature using digital sequences.
+\newblock In Cools and Nuyens \cite{CooNuy16a}.
+\newblock to appear, arXiv:1410.8615 [math.NA].
+
+\bibitem{JimHic16a}
+{\relax Ll}.~A. {Jim\'enez Rugama} and F.~J. \HickernellFJ.
+\newblock Adaptive multidimensional integration based on rank-1 lattices.
+\newblock In Cools and Nuyens \cite{CooNuy16a}.
+\newblock to appear, arXiv:1411.1966.
+
+\bibitem{LonSch01}
+F.~A. Longstaff and E.~S. Schwartz.
+\newblock Valuing american options by simulation: A simple least-squares
+  approach.
+\newblock {\em Review of Financial Studies}, 14:113--147, 2001.
+
+\end{thebibliography}
+
+\end{document}
+
+There exist a special set of functions whose function values not only depend on each input point independently, but on the entire set of input points altogether. In other words, if we define the $n$ pointwise function evaluations $\widehat{\vy} := \left\{f(\vx_i)\right\}_{i=1}^n$, and the evaluation using the whole set of points as an input $\widetilde{\vy} :=f\left(\left\{\vx_i\right\}_{i=1}^n\right)$, it might occur that $\widehat{\vy}\neq\widetilde{\vy}$. In this case, the automatic quasi-Monte Carlo cubatures described in \cite{JimHic16a} and \cite{HicJim16a} need to be modified according to this dependency.

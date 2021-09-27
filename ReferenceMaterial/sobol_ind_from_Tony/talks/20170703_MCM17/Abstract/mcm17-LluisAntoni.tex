@@ -1,0 +1,85 @@
+\documentclass[12pt]{article}
+
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{color}
+
+\setlength{\textheight}{8.8in}
+\setlength{\textwidth}{6.5in}
+\setlength{\topmargin}{0.0in}
+\setlength{\headheight}{0.0in}
+\setlength{\headsep}{0.0in}
+\setlength{\oddsidemargin}{0.0in}
+\setlength{\parskip}{8pt plus 2pt minus 1pt}
+\setlength{\parindent}{0pt}
+\pagestyle{empty}
+
+\newcommand{\session}[2]{{\color{red}{\bf In Session:} #2, organized by #1}}
+\newcommand{\talktitle}[1]{{\Large\bf #1}\\[12pt]}
+\newcommand{\authors}[1]{\emph{#1}\\[8pt]}
+\newcommand{\affiliations}[1]{{#1}\\[6pt]}
+\newcommand{\contacts}[1]{{#1}\\}
+
+\def\thebibliography#1{\list
+  {[\arabic{enumi}]}{\settowidth\labelwidth{[#1]}\leftmargin\labelwidth
+    \advance\leftmargin\labelsep\usecounter{enumi}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+%  If your talk belongs to a proposed or special session, please uncomment
+%  the next line and give the correct information.
+\session{Christiane Lemieux}{Sobol' indices and Sobol' sequences}
+
+\begin{center}
+\vspace*{0.5cm}
+%
+\talktitle{Automatic estimation of first-order Sobol' indices using the replication procedure}
+%
+\authors{Llu\'is Antoni Jim\'enez Rugama$^a$, Laurent Gilquin$^b$, \'Elise Arnaud$^c$, Fred J. Hickernell$^a$, Herv\'e Monod$^d$, Cl\'ementine Prieur$^c$}
+%
+\affiliations{$^a$Illinois Institute of Technology, $^b$Inria Grenoble --- Rh\^one-Alpes, $^c$Universit\'e Grenoble Alpes, INRIA/LJK, $^d$MaIAGE, INRA}
+%
+\contacts{ljimene1@hawk.iit.edu, laurent.gilquin@inria.fr, elise.arnaud@inria.fr, hickernell@iit.edu, herve.monod@jouy.inra.fr, clementine.prieur@imag.fr}
+%
+\vspace*{0.3cm}
+\end{center}
+
+%%%%%%%%%%   Type your abstract below
+
+We consider models of the form $f(\mathbf{X})$ where $\mathbf{X} \sim \mathcal{U} [0,1]^d$. The normalized Sobol' indices $S_{\boldsymbol{\rm u}}$ in \cite{Sob01} measure what part of the variance ${\rm Var}[f(\mathbf{X})]$ is explained by a subset of inputs indexed by $\boldsymbol{\rm u}\subseteq \{1,\dots,d\}$.
+
+In practice, these indices are usually unknown and need to be estimated using model evaluations that can be expensive to obtain. For first-order indices, i.e. ${\boldsymbol{\rm u}}=j\in\{1,\dots,d\}$, the main disadvantage is that we require a total of $(d+1)n$ model evaluations to estimate each index with $n$ evaluations. The replication procedure introduced in \cite{TisPri15} allows to estimate all first-order indices using orthogonal arrays with $2n$ evaluations instead.
+
+In this talk we present an extension of our adaptive integration Sobol' rules \cite{HicJim16a} to estimate first-order indices with the replication procedure. These Sobol' rules choose $n$ automatically to ensure that $|S_j - \widehat{S}_j| \le \varepsilon$, for all $j\in\{1,\dots,d\}$ and a user-specified error tolerance $\varepsilon$.
+
+
+
+%%%%%%%%%%   References
+\bibliographystyle{plain}
+%\bibliography{}
+
+%\def\Ignore#1{}\def\notesupp#1{}\def\Ignore#1{}\def\notesupp#1{}\providecommand{\HickernellFJ}{Hickernell\xspace}
+\begin{thebibliography}{1}
+
+\bibitem{GilJim16b}
+L.~Gilquin, and {\relax Ll}.~A. {Jim\'enez Rugama}, ``Reliable error estimation for {S}obol' indices,'' {\em Statistics and Computing}, 2017+. Under review.% \url{https://hal.inria.fr/hal-01358067/document}.
+
+\bibitem{Gilquin17}
+L.~Gilquin, {\relax Ll}.~A. {Jim\'enez Rugama}, E.~Arnaud, F.~J. Hickernell, H.~Monod, and C.~Prieur: ``Iterative construction of replicated designs based on Sobol' sequences,'' {\em Comptes Rendus Math\'ematique}, vol. 355, pp.~10-14, 2017.
+
+\bibitem{HicJim16a}
+F.~J. Hickernell, and {\relax Ll}.~A. {Jim\'enez Rugama}, ``Reliable adaptive cubature using digital sequences,'' in {\em Monte Carlo and Quasi-Monte Carlo Methods 2014} (R.~Cools and D.~Nuyens, eds.), pp.~367--383, Springer International Publishing, 2016.
+
+\bibitem{Sob01}
+I.~M. Sobol', ``Global sensitivity indices for nonlinear mathematical models and their {M}onte {C}arlo estimates,'' {\em Mathematics and Computers in Simulation (MATCOM)}, vol.~55, no.~1, pp.~271--280, 2001.
+  
+\bibitem{TisPri15}
+J.-Y. Tissot, and C.~Prieur, ``A randomized orthogonal array-based procedure for the estimation of first- and second-order {S}obol' indices,'' {\em Journal of Statistical Computation and Simulation}, vol.~85, no.~7, pp.~1358--1381, 2015.
+
+
+\end{thebibliography}
+
+
+\end{document}

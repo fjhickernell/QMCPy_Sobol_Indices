@@ -1,0 +1,215 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{amssymb,
+mathtools,bm,extraipa,mathabx,graphicx,algorithm}
+\usepackage{color}
+
+\newcommand{\vect}[1]{\boldsymbol{\mathbf{#1}}}
+\newcommand{\vk}{\vect{k}}
+\newcommand{\vx}{\vect{x}}
+\newcommand{\vI}{\vect{I}}
+\newcommand{\hS}{\widehat{S}}
+\newcommand{\tS}{\widetilde{S}}
+\newcommand{\wcS}{\widecheck{S}}
+\def\dashfill{\cleaders\hbox to 2em{-}\hfill}
+\newcommand{\answer}[1]{{\color{blue} #1 }}
+
+\makeatletter
+\newcommand{\ov}[1]{
+  \m@th\overline{\mbox{#1}\raisebox{2mm}{}}
+}
+
+\begin{document}
+
+\textcolor{blue}{Dear associated editor and reviewers,\\
+we would like to thank you for the positive and constructive feedback. Below we have compiled a detailed list of answers (blue text) to the issues raised in the review reports. The corresponding modifications in the manuscript are colored in purple. In particular, in light of reviewer's two remark, the Asian option problem was replaced with a new application.\\
+Best regards,\\
+Laurent Gilquin and Llu\'{i}s Antoni Jim\'{e}nez Rugama}
+
+\section*{Report on ``Reliable error estimation for Sobol' indices''}
+
+\textbf{\large{Associate Editor comments}}
+\vspace*{0.5cm}
+
+\begin{itemize}
+\item[1.] Page 4, left, line 52: What are $\kappa$ and $\vk(\kappa)$ there? They seem undefined, and then many readers will not understand what follows.
+
+{\color{blue} The notations $\kappa$ and $\tilde{\vk}(\kappa)$ (former $\vk(\kappa)$) are now properly defined.}
+\item[2.] Page 4, right, line 30: Remove the period before (13).
+
+{\color{blue} The typo has been fixed.}
+\item[3.] Page 4, right, lines 38--42: We find $\epsilon_{\hat I}$ in (14) and $\epsilon_{I}$ below (seems inconsistent).
+
+{\color{blue} The typo has been fixed.}
+\item[4.] Section 5.2: These empirical results are for what parameters $d$, $T$, $S_0$, $\sigma$, $\rho$, $K$? I expect the behavior to depend strongly on the values of these parameters. E.g., large $d$ vs small $d$, large $T$ vs small $T$, large $\sigma$ vs small $\sigma$, etc. Also, this example is largely academic and not based on real-life data; I would not call it a "real-life" example. 
+
+{\color{blue} The ``real case model'' has been replaced with another academic application as suggested by the second reviewer. Nonetheless, we thank the associate editor for pointing out these corrections.}
+\item[5.] The given examples are only in small dimensions. What about higher-dimensional "real-life" examples?-- Pierre L'Ecuyer
+
+{\color{blue} The new academic application is in dimension $15$. For higher-dimensional examples, we expect the effective dimension to be much smaller than its nominal dimension. Otherwise, a high dimensional problem with high effective dimension will be hard to deal with in most applications. In low effective dimensional problems, most Sobol' indices will have a small value. As shown in the examples, all the small value indices are very easily estimated. Furthermore, the estimator ``Correlation 2'' can (in some cases) reduce further the function values needed for inputs with small main effects.}
+\end{itemize}
+
+\newpage
+\textbf{\large{Reviewer $1$}}
+\vspace*{0.5cm}
+
+\textbf{Major comments}:
+
+\begin{itemize}
+\item[1.] Advantages of using this method: The proposed method seems to work well in that with enough function evaluations, in most case the Sobol' indices can be estimated with good accuracy. In Section 2.3, the authors discuss a few alternative approaches and their disadvantages. They argue the main advantages of their approach are that 1) it guarantees the desired error threshold is met and 2) is not costly to compute. A concern with 1) is that we see later that sometimes the error threshold looks like it is not met (see item (3) below on the topic of the set C). A concern with 2) is that later in the paper, the discussion of the cost only focuses on the evaluation of the function f and seems to ignore the cost of constructing the error threshold (see item (2) below about "complete assessment of the cost"). In light of these concerns, simpler methods based on random sampling and straightforward confidence intervals become more attractive, as they have no extra cost and potentially a better assessment of how likely it is that the error is met (i.e., they provide a probabilistic statement about the error vs hoping parameters have been chosen so that the threshold is valid). I think this point should be discussed more thoroughly -- perhaps in the conclusion, or in Section 5 -- by the authors in order to convince the readers that the proposed method is indeed better.
+
+{\color{blue} The points raised in this remark are crucial. We expect to have answered these questions with the information added the article.
+
+Below we address the remark: ``simpler methods based on random sampling and straightforward confidence intervals become more attractive, as they have no extra cost and potentially a better assessment of how likely it is that the error is met''. 
+
+The cost of constructing the error bound is a computational cost and not a numerical cost. That is, it does not require extra model evaluations. This point is further discussed in question 2.
+
+For the estimation of the integrands, random sampling methods have convergence rates of $\mathcal{O}(n^{-1/2})$ instead of the quasi-Monte Carlo methods $\mathcal{O}(n^{-1+\delta})$. Hence, we expect the precision of our procedure to be better than those of random sampling methods that use confidence intervals (asymptotic or bootstrap based). In our approach, the construction of the error bounds is analytical even if the Sobol' sequence is randomly sampled. However, in other random sampling methods the confidence intervals are estimated entirely from the sampling points and are less accurate.
+
+To confirm this claim, the precision of our procedure is compared to bootstrap confidence intervals obtained from random sampling. The comparison is carried out for the Bratley \textit{et al.} test function in Section 5.3. Results show that for an equivalent number of evaluations, the random sampling method is less accurate than our procedure.}
+
+
+
+\item[2.] Complete assessment of the cost: Since only the different variants of this method are compared in the numerical results, it is fair to focus on the number of function evaluations to compare their respective costs. However, and as discussed in paper [4] from the list of references (in particular toward the end of Theorem 1 in [4]), the overall cost of this method should also include the Walsh function evaluations required to determine the quantity $\widetilde{S}_{l,m}$ used in the error calculation via (14). The authors should mention this and discuss this impact of this cost on comparisons that are made with other methods.
+
+\answer{We added an explanation at the beginning of Section 4. The function values used to estimate the Sobol' indices are the same ones used to compute the discrete Walsh coefficients. Thus, there are no additional function evaluations needed to compute $\widetilde{S}_{\ell,m}$. The only cost we should consider is the computational cost of calculating the fast transform. However, on a regular laptop, in the extreme case of $2^{20}$ model evaluations, the fast transform takes around $0.5$ seconds.}
+
+\item[3.]The set C: In the section describing numerical results, choices are made for the parameters $\ell^*$ and $r$ which in turn define the set (cone) of functions C for which the error threshold formula (14) used to derive the algorithm holds. There should be some information in the paper on whether or not the functions considered in this section can be shown to be in this cone. This is especially important in light of the results obtained on page 10 (column 1, lines 36-38), where it looks like the error threshold was not met by the algorithm. Is it because the function is not in C?
+
+\answer{As the reviewer claims, this is a key point that we revised and explained with more detail. It is really hard to verify whether an integrand satisfies the cone condition. Indeed, because we choose our mapping $\tilde{\vk}$ heuristically, the cone conditions will also depend on the scrambling. At the end of section 3 we cited some data-based necessary conditions that can help identify when integrands are not in the cone. In addition, also at the beginning of section 5, we noted that if the error bound is not satisfied it is certain that the integrand is not in the cone.}
+\end{itemize}
+\vspace*{0.5cm}
+
+\textbf{Minor comments}:
+\begin{itemize}
+\item[a.] page 1, column 1, lines 23-24: "through" instead of "trough"
+
+{\color{blue} The typo has been corrected.}
+\item[b.] page 2, column 2, equation (7): why use a biased estimator for $\sigma^2$ ?
+
+{\color{blue} The biased estimator has been replaced with the unbiased one.}
+\item[c.] page 4, column 2, equation (14): it is not clear how $\ell$ is chosen on the RHS, and whether or not the inequality holds for all $\ell \leq m$ or for some specific value of $\ell$ ? Please clarify.
+
+\answer{While the RHS holds for any $\ell_*\leq\ell\leq m$, it is definitely not clear how to proceed with the information given in the article. We added more details clarifying that one only needs to fix $r=m-\ell$. Once $r$ is chosen, the RHS only depends on $m$.}
+
+\item[d.] page 4, column 2, line 42: is it not instead "...the error bound $\epsilon_{\hat{I}}$" (hat on subscript I?)?
+
+{\color{blue} The typo has been corrected.}
+\item[e.] page 5, column 2 line 55: not clear what you mean by "independent" in "two independent Sobol' sequences", especially if the designs are not randomized. From [4] it looks like you are using a 2d-dimensional Sobol' sequence and assign the first d coordinates to the first design and the next d ones to the second design. Please explain this more and state what properties you need for these sequences.
+
+{\color{blue} The paragraph has been reworked. The reviewer guessed right. We use a 2d-dimensional Sobol' sequence and assign its first d dimensions to the first design and the remaining ones to the second design. Although this is our choice, one may choose any other Sobol' construction of $\mathcal{P}_{m}$ and $\mathcal{P}'_{m}$ as long as the $2d$ dimensions are each generated with different primitive polynomials. After that, each Sobol' sequence is scrambled independently; except in Variant B where the scrambling of both designs should be the same to ensure that both designs after the scrambling are replicated of order one.
+
+As for the properties, in this paper we generate the sequences with the direction numbers found by S. Joe and F. Y. Kuo (2008) who optimized the two-dimensional projections.}
+
+\item[f.] page 6, column 2, line 32: is the "iid" property valid across the indices i, i.e., the n vectors have to be independent? If so, this would invalidate the use of a Sobol' sequence to create these vectors, so please clarify this point.
+
+\answer{As pointed out by the reviewer, some clarification was needed in this paragraph. We indicated that we extend  Owen's estimator by using Sobol' sequences instead of iid random points.}
+
+\item[g.] page 9, column 2 , "real case model". There are some imprecisions in this part: lines 15-16, it should be the "discounted payoff" and not just "payoff", rho is the risk-free interest rate (not just interest rate). More importantly, the authors directly give the discounted payoff in terms of the Brownian motion without stating what model is used for the stock price and without stating that for the purpose of pricing one should work under the risk-neutral measure. Please clarify this so that the financial motivation for this problem is properly done.
+
+{\color{blue} The ``real case model'' has been replaced with a new application as suggested by the second reviewer. Nonetheless, we thank the reviewer for these corrections that we agreed with.} 
+\end{itemize}
+
+\newpage
+\textbf{\large{Reviewer $2$}}
+\vspace*{0.5cm}
+
+\textbf{Major comments}:
+\begin{itemize}
+\item[1.] Definition 1 is not enough to get good points. Additional criteria should be attached to it, either by making the definition stricter or requiring some
+other conditions to hold.
+
+To illustrate, suppose that $u_0,\dots,u_{n-1} \in [0,1]$ are chosen. Then let $\vx_i = (u_i, u_i, \dots,u_i) \in \mathbb{R}^d$ and choose $\vx'_i= \vx_{\pi(i)}$ where $\pi$ is a permutation
+of $0$ through $n-1$. Now we have replicated designs of order $a$ for any $a = 1,\dots,d-1$. In fact simply taking $n = 1$ and $\vx'=\vx \in [0,1]^d$ will do.
+
+Also, how is $\pi_u$ defined when there is more than one permutation that rearranges the rows $\vx'_i$ into $\vx_i$? Maybe it should say ``to be any permutation
+that rearranges the rows ... ''.
+
+{\color{blue} We thank the reviewer for this remark. Definition 1 is not intended to describe good points. It simply generalizes the definition of replicated designs to suggest the use of a bigger set of types of points. For instance, this definition clearly includes orthogonal arrays and Sobol' sequences, but rank-1 lattices are another type of points that could also generate replicated designs of order 1. Each of them are different types of points whose quality is measured with different tools. The authors think that at this point, the quality should be studied by type of points instead.
+
+Nonetheless, we modified the definition to only consider point sets whose points are coordinate-wise different. More precisely, consider $\mathcal{P}=\{\vx_i\}_{i=0}^{n-1}$ and $\vx_{i_1}$, $\vx_{i_2}$, two different points from this set. Then $\vx_{i_1}$ and $\vx_{i_2}$ are coordinate-wise different if: 
+$$ x_{i_1,j} \neq x_{i_2,j}, \qquad \forall j=1,\dots,d .$$
+Definition 1 has been reworked to include this property. This solves the issue of having more than one permutation that would rearrange the rows $\vx'_i$ into $\vx_i$. Now, the permutation is unique.}
+
+%Furthermore, a remark was added to specify that in this paper $\mathcal{P}$ and $\mathcal{P}'$ are constructed to avoid the degenerate case: $\forall i, \ \vx'_i=\vx_i$.}
+
+
+
+\item[2.] Section $3.1$ needs more detail for readers not already familiar with the approach. For instance on page $4$ line $16$ a little should be said about what $k_{j\ell}$ is. It should also briefly say in words what $S_m$, $\hS_{\ell,m}$, $\wcS_m$ and $\tS_{\ell,m}$ all mean.
+
+\answer{More details have been provided in Section 3.1. Among all additions, $k_{j\ell}$ has been defined and the sums $S_m$, $\hS_{\ell,m}$, $\wcS_m$, $\tS_{\ell,m}$ have been briefly described in conjunction with the cone conditions.}
+
+\item[3.] Page $5$ line $56$ presents some bounds that the Sobol' indices must satisfy. Sometimes they won't satisfy those bounds. When do they fail, how that
+be detectable, and what can we do in the face of bounds that might or might not hold? Presumably these issues have been discussed in simpler contexts. The paper should address this issue.
+
+\answer{
+As proposed in this remark, we added more information at the end of Section 3 to clarify the issue.
+
+If $I_1, I_2, I_3, I_4$ are all in $\mathcal{C}$, by construction we know that
+\[ \underline{S}_u\in \left[ \widehat{\underline{S}}_u - \varepsilon_{\widehat{\underline{S}}_u}, \widehat{\underline{S}}_u + \varepsilon_{\widehat{\underline{S}}_u} \right], \qquad \overline{S}_u\in \left[ \widehat{\overline{S}}_u - \varepsilon_{\widehat{\overline{S}}_u}, \widehat{\overline{S}}_u + \varepsilon_{\widehat{\overline{S}}_u} \right] .\]
+However, since we do not assume the knowledge of the Walsh coefficients of our integrands, it is hard to verify whether each of them lie inside $\mathcal{C}$. Instead, we suggest and refer to some data-based necessary conditions discussed in another article. If these necessary conditions are not satisfied, one should consider enlarging the cone.}
+
+\item[4.]If we replace $f$ by $f-c$ for some constant shift $c$, then the Sobol' indices do not change. But the bounds for $\underline{S}_u$ and $\overline{S}_u$ do change because $\vI_3$ is affected. What could/should we do about this?
+
+{\color {blue} We acknowledge that analytical formulas of Sobol' indices are invariant by adding a constant shift $c$ to the function $f$. As underlined by the reviewer, in our algorithm the addition of a constant shift $c$ modifies the error bound for $\vI_3$ but also the error bounds for the integrands $\vI_1$ and $\vI_2$.
+
+However, our goal is to design an automatic (finds the number of points needed automatically) and adaptive (adapts to the difficulty of the problem) algorithm whose inputs are only:
+\begin{itemize}
+\item the absolute error tolerance.
+\item the black-box $f$ that only gives the value of $f(\vx)$ at any $\vx\in [0,1]^d$.
+\end{itemize}
+Without additional information and for the class of functions defined, the algorithm cannot distinguish whether a finite number of function values correspond to a shifted model or to another completely different model. We could restrict to a smaller class of functions to modify the algorithm and detect the shift case, but we preferred providing a more general algorithm.}
+
+
+\item[5.] Page $7$ lines $22:27$. The discussion here is saying that the higher dimensional integrand is likely to be the one that needs more evaluations. That is not in line with the last couple of decades of QMC theory. The nominal dimension might not be very telling. Maybe only a few of the inputs are important in the higher dimensional integrand, or maybe the higher order variable interactions are less important for that integrand.
+
+So, can you give a better reason for why that integrand might need larger $n$? Alternatively, in the numerical examples, which integrands required the most evaluations?
+(This point touches on the circular issue, perhaps best avoided, of finding which variables are important when you're estimating a Sobol' index.)
+
+{\color{blue} We agree with the reviewer that the effective dimension of the $2d$ integrand in $I_1$ might be lower than the $d+1$ integrand in $I_2$. However, estimating the effective dimension of each integrand already requires a large number of model evaluations (\textit{c.f.} Wang. X and Fang. K.-T., 2003).
+
+Since evaluating the effective dimension is not in the scope of this paper, we propose the following. The original statement has been replaced with the assumption that the integrand in $I_1$ is harder to estimate than the integrand in $I_2$. Then, this assumption is tested on each example by comparing the number of evaluations required to estimate $I_1$ vs $I_2$. This is a reasonable assumption since $I_1$ contains a factor $f(\vx)f(\vx')$ (not appearing in $I_2$) which could increase the effective dimension of its homologous $f(\vx)$. While it is true that in QMC the nominal dimension might not be very telling, this happens in particular cases such as Banach spaces with dimension weights satisfying some specific properties. Since for Sobol' indices we consider integrands resulting from products of the same function with different independent inputs, considering the original space might not be enough and the resulting effective dimension might increase.}
+%plotting the repartition of the sum of the $c_j$ (equation (19)) over the $100$ repeats. The sign of the sum tells us if, in average, this assumption is validated across the Sobol' indices.}
+
+
+\item[6.] In Section $5.1.1$, the Sobol' g-function looks like a potentially misleading choice. It is completely smooth except when one of the inputs is $1/2$.
+That makes it a particularly favorable problem for Sobol' points or any points in base $2$. The problem might just be too QMC-friendly. It would be better to use $g_j(x_j) = (|3x_j-2| + a_j)/(1 + a_j)$ which has issues when
+$x_j = 2/3$ which is not dyadic. The QMC friendly version might still work exactly the same as the unfriendly version, but changing $g$ just removes that issue from consideration.
+
+{\color{blue} The Sobol' g-function has been modified according to the reviewer's remark. There were no drastic changes observed, perhaps because the scrambling removes the anchoring. Indeed, the new results show that failure rates have improved for all three approaches (Variant A.a, A.b and B).} 
+
+\item[7.] The Asian option is very over used in QMC problems. We already know that BB and PC make the first component most important. It might be interesting to compare these two, although the answer might depend on
+the strike price and volatility. 
+
+For the same amount of work, the authors could use a real function where the answer would be interesting. Derek Bingham maintains a site of test functions for computer experiments. Some of those would be more suitable.
+
+{\color{blue} The Asian option problem has been replaced by the wing weight test function taken from the suggested database. Section $5.2$ has been reworked to introduce this new test function.} %Our results are compared to older results obtained by screening approaches (Moon, H. (2010)).} 
+
+\item[8.] Sobol' indices are often motivated by the need to identify important variables when $f$ is expensive to evaluate; perhaps half a day for $n = 1$. Estimates that require $n$ to be several hundred thousand do not fit that motivating context. If the authors can describe a context where it would be worth having $n = 400000$ to get a Sobol' estimate, that would be great. Nobody else has properly addressed this issue, so this point is a
+suggestion, not a requirement.
+
+{\color{blue} We understand and agree with the issue raised by the reviewer. A possible solution is to choose a less conservative precision $\epsilon$ when dealing with time-expensive functions. The algorithm also allows to modify the maximum number of points allowed to estimate the indices. In the proposed examples, $\epsilon$ was intentionally fixed small to push forward the performance of our algorithm. That clearly shows the difference in number of function evaluations needed to estimate different indices for the same model.
+
+If one has to deal with a function where one day is required to obtain one evaluation, perhaps the use of a screening method is more adequate (less accurate but less greedy). Or if available, one could make use of a cluster to perform multiple model evaluations in parallel.}
+\end{itemize}
+\vspace*{0.5cm}
+
+\textbf{Minor comments}:
+\begin{itemize}
+\item[a.] page $2$ line $48$: it should be clear that $v \subset $u excludes $v = u$.
+
+\item[b.] page $2$ line $59$: it is not clear why $u = \mathcal{D}$ is ruled out. In that case both $\underline{\tau}_u^2$ and $\ov{$\tau$}_u^2$ equal $\sigma^2$.
+
+\item[c.] equation (7) is a numerically poor way to estimate $\sigma^2$ (roundoff errors).
+
+\item[d.] page $3$ line $37$: accordingly $\rightarrow$ according
+
+\item[e.] page $4$: there is a symbol class of $S$ for Sobol' indices with $S_m(f)$ and related quantities. The paper could note the distinction or possibly use a
+new letter.
+
+\item[f.] page $8$ line $16$: twice as small  $\rightarrow$ half as large
+\end{itemize}
+
+{\color{blue} All minors points have been dealt with. For point c., equation (7) was replaced with the unbiased estimator of $\sigma^2$. For point e., the distinction has been noted in the paper. The authors preferred to keep the notations from previous cited articles.
+\end{document}
