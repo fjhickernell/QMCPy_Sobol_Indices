@@ -55,17 +55,20 @@
 \newcommand{\scnote}[1]{ {\textcolor{blue}  {\mbox{SC: } #1}}}
 
 % metadata
-\title{Sobol' Indices in QMCPy}
+\title{Efficiently Computing Sensitivity Indices with QMCPy}
 \author{Aleksei Sorokin, Jagadeeswaran Rathinavel}
 \date{\today}
+
+\bibliographystyle{plain} 
 
 \begin{document}
 
 \maketitle
 
 \section{Abstract}
-Functional ANOVA (analysis of variance) decomposes a function $f \in \mathcal{L}^2([0,1]^d)$ into the sum of orthogonal sub-functions dependent on only a subset of inputs: $f(\bx) = \sum_{u \in \{1,\dots,d\}} f_u(\bx_u)$ \cite[Appendix A]{mcbook}. This formulation allows $\text{var}(f)=\sigma^2$ to be decomposed into the sum of variances of sub-functions: $\sigma^2 = \sum_{u \in \{1,\dots,d\}} \sigma^2_u$ where $\sigma^2_u = \text{var}(f_u)$. Sobol' indices 
-$$\underline{\tau}_u^2 = \sum_{v \subset u} \sigma^2_u \quad \text{and} \quad  \overline{\tau}_u^2 = \sum_{v: v \cap u \neq \emptyset} \sigma^2_u$$ quantify the contributions of subsets of $u$ and subsets containing $u$ respectively. The normalized forms, $\underline{\tau}_u^2/\sigma^2$ and  $\overline{\tau}_u^2/\sigma^2$, called the \emph{closed} and \emph{total} sensitivity indices, quantify the proportion of variance explained by a given subset of inputs. These importance scores have been used in a variety of applications for global sensitivity analysis. We have developed robust support for sensitivity index approximation in QMCPy \cite{QMCPy}, an open source Quasi-Monte Carlo library in Python. 
+\AGSNote{compile \em{your\_abstract.tex}}
+
+\cite{reliable_sobol_indices_approx, QMCPy, mcbook}
 
 \section{Derivations}
 
