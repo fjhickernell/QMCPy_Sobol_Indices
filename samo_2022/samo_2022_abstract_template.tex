@@ -16,10 +16,6 @@
 
 % Type your abstract here.
 \abstract{
-
-%Functional ANOVA (analysis of variance) decomposes a function $f \in \mathcal{L}^2([0,1]^d)$ into the sum of orthogonal sub-functions dependent on only a subset of inputs: $f(\bx) = \sum_{u \in \{1,\dots,d\}} f_u(\bx_u)$ \cite[Appendix A]{mcbook}. This formulation allows the variance of the function, $\text{var}(f)=\sigma^2$, to be decomposed into the sum of variances of sub-functions: $\sigma^2 = \sum_{u \in \{1,\dots,d\}} \sigma^2_u$ where $\sigma^2_u = \text{var}(f_u)$. Sobol' indices $\underline{\tau}_u^2 = \sum_{v \subset u} \sigma^2_v$ and $\overline{\tau}_u^2 = \sum_{v \cap u \neq \emptyset} \sigma^2_v$ quantify the contributions of subsets of $u$ and subsets containing $u$ respectively. The normalized forms, $\underline{\tau}_u^2/\sigma^2$ and  $\overline{\tau}_u^2/\sigma^2$, called the \emph{closed} and \emph{total} sensitivity indices, quantify the proportion of variance explained by a given subset of inputs. These importance scores have been used in a variety of applications for global sensitivity analysis. This talk details how sensitivity indices can be efficiently approximated using QMCPy \cite{qmcpy}, an open source Quasi-Monte Carlo library in Python.  
-
-
 Sobol' indices quantify the importance of a function's inputs to explaining the output's variance \cite[Appendix A]{mcbook}.  Normalized Sobol' indices, or sensitivity indices, have been used in a variety of applications for global sensitivity analysis. Monte Carlo methods present an efficient approach for approximating these importance scores. In this talk, we will describe our implementation of such techniques into QMCPy \cite{QMCPy}, an open source Quasi-Monte Carlo library in Python. QMCPy utilizes algorithms from \cite{reliable_sobol_indices_approx} to adaptively select an appropriate number of samples so the approximation is guaranteed to be within an desired tolerance of the true sensitivity indices. 
 
 %  If you have references, put them here in a format like below. 

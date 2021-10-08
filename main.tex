@@ -47,6 +47,7 @@
 % bibliograpy
 \usepackage{biblatex}
 \addbibresource{ags.bib}
+\addbibresource{main.bib}
 
 % macros
 \input ags.tex
@@ -55,31 +56,116 @@
 \newcommand{\scnote}[1]{ {\textcolor{blue}  {\mbox{SC: } #1}}}
 
 % metadata
-\title{Efficiently Computing Sensitivity Indices with QMCPy}
+\title{Robust Approximation of Sensitivity Indices in QMCPy}
 \author{Aleksei Sorokin, Jagadeeswaran Rathinavel}
 \date{\today}
 
-\bibliographystyle{plain} 
 
 \begin{document}
 
 \maketitle
 
 \section{Abstract}
-\AGSNote{compile \em{your\_abstract.tex}}
 
-\cite{reliable_sobol_indices_approx, QMCPy, mcbook}
+Sobol' indices quantify the importance of a function's inputs to explaining the output's variance \cite[Appendix A]{mcbook}.  Normalized Sobol' indices, or sensitivity indices, have been used in a variety of applications for global sensitivity analysis. Monte Carlo methods present an efficient approach for approximating these importance scores. We will describe our implementation of such techniques into QMCPy \cite{QMCPy}, an open source Quasi-Monte Carlo library in Python. QMCPy utilizes algorithms from \cite{reliable_sobol_indices_approx} to adaptively select an appropriate number of samples so the approximation is guaranteed to be within an desired tolerance of the true sensitivity indices. 
 
-\section{Derivations}
+\section{Background}
 
+Functional ANOVA (analysis of variance) decomposes a function $f \in \mathcal{L}^2(0,1)^d$ into the sum of orthogonal functions
 \begin{equation}
-    \underline{\tau}_u^2 = \int_{[0,1]^{2d}} f(\bx)[f(\bx_u,\bz_{-u})-f(\bz)]\D\bx\D\bz
-    \label{eq:si_closed}
+    f(\bx) = \sum_{u \in 1:d} f_u(\bx_u)
 \end{equation}
+\cite[Appendix A]{mcbook} where $1:d = \{1,\dots,d\}$ and $f_u$ only depends on $\bx_u = (x_j)_{j \in u}$. This formulation allows the variance of $f$,
 \begin{equation}
-    \overline{\tau}_u^2 = \frac{1}{2}\int_{[0,1]^{d+u}} [f(\bz)-f(\bx_u,\bz_{-u})]^2\D\bz\D\bx_u
-    \label{eq:si_total}
+    \sigma^2 = \calV(f) =
+    \int_{[0,1]^d} f(\bx)^2 \D \bx - \left(\int_{[0,1]^d}f(\bx)\D\bx\right)^2,
+\end{equation} 
+to be decomposed into the sum of variances of sub-functions
+\begin{equation}
+    \sigma^2 = \sum_{u \in 1:d} \sigma^2_u
 \end{equation}
+where $\sigma_u^2 = \calV(f_u)$. 
+
+The closed and total \emph{Sobol' indices},
+\begin{equation}
+    \underline{\tau}_u^2 = \sum_{v \subset u} \sigma^2_v \quad \text{and} \quad 
+    \overline{\tau}_u^2 = \sum_{v \cap u \neq \emptyset} \sigma^2_v,
+\end{equation}
+quantify the variance attributable to subsets of $u$ and subsets containing $u$ respectively. The \emph{sensitivity indices},
+\begin{equation}
+    \underline{s}_u = \underline{\tau}_u^2/\sigma^2 \quad \text{and} \quad 
+    \overline{s}_u = \overline{\tau}_u^2/\sigma^2,
+\end{equation}
+normalize the Sobol' indices to quantify the proportion of variance explained by a given subset of inputs. These sensitivity indices may be written, in non-unique forms, as
+\begin{align}
+    \underline{\tau}_u^2 &= \int_{[0,1]^{2d}} f(\bx)[f(\bx_u,\bz_{-u})-f(\bz)]\D\bx\D\bz \qquad \text{and} \\
+    \overline{\tau}_u^2 &= \frac{1}{2}\int_{[0,1]^{d+u}} [f(\bz)-f(\bx_u,\bz_{-u})]^2\D\bz\D\bx_u.
+\end{align}
+
+Given $u \in 1:d$, a simultaneous Monte Carlo approximation of both sensitivity indices may draw $n$ samples $(\bx_1,\bz_1), \dots, (\bx_n,\bz_n) \sim \calU(0,1)^{2d}$, subset into $v_1,\dots,v_n \sim U(0,1)^d$ where
+\begin{equation}
+    \bv_i = (\bx_{i,u},\bz_{i,-u}) = \left(\begin{aligned}x_{ij}, \quad & j \in u \\ z_{ij}, \quad & j \notin u \end{aligned}\right)_{j=1}^d,
+\end{equation}
+and compute approximations
+\begin{align}
+    \hat{\mu}_1 &= \frac{1}{n} \sum_{i=1}^n f(\bx_i) \\ % first moment
+    \hat{\mu}_2 &= \frac{1}{n} \sum_{i=1}^n f(\bx_i)^2 \\ % second moment
+    \hat{\underline{\tau}}_u^2 &= \frac{1}{n} \sum_{i=1}^n f(\bx_i)[f(\bv_i) - f(\bz_i)], \\ % closed Sobol' index
+    \hat{\overline{\tau}}_u^2 &= \frac{1}{2n} \sum_{i=1}^n [f(\bz_i)-f(\bv_i)]^2. % total Sobol' index 
+\end{align}
+We may approximate the closed and total sensitivity via
+\begin{equation}
+    \hat{\underline{s}}_u = \frac{\hat{\underline{\tau}}_u^2}{\hat{\mu}_2-\hat{\mu}_1} \quad \text{and} \quad 
+    \hat{\overline{s}}_u = \frac{\hat{\overline{\tau}}_u^2}{\hat{\mu}_2-\hat{\mu}_1}.
+\end{equation}
+Approximating $\hat{\underline{s}}_u$ and $\hat{\overline{s}}_u$ with $n$ shared samples requires $\$3n$ where evaluation of $f$ costs $\$1$. 
+%Note that at this stage we have suppressed approximation's dependence on $n$.
+
+\section{Vectorized Computation}
+
+We now wish to approximate the closed and total sensitivities for a vector of index sets $\bu = \left(u_k\right)_{k=1}^{\lvert \bu \rvert}$ where $u_k \subset 1:d$. If $A: \bbR^{n \times 2d} \to \bbR^{2+2\lvert \bu \rvert}$ is to handle the approximation computation given a set of $n$ samples, then we set
+\begin{equation}
+    A\left(\{\bx_i,\bz_i\}_{i=1}^n\right) = \hat{\bmu} = \left(\hat{\mu}_1,\hat{\mu}_2,\hat{\underline{\tau}}_{u_1}^2,\dots,\hat{\underline{\tau}}_{u_{\lvert \bu \rvert}}^2,\hat{\overline{\tau}}_{u_1}^2,\dots,\hat{\overline{\tau}}_{u_{\lvert \bu \rvert}}^2\right).
+\end{equation}
+The vector of integral approximations $\hat{\bmu}$ contains estimates of the first and second moments followed by $\lvert \bu \rvert$ closed then $\lvert \bu \rvert$ total sensitivity indices Sobol' indices. Now, the  estimates for closed and total indices be define as the length $\lvert \bu \rvert$ vectors
+\begin{equation}
+    \hat{\underline{\bs}}_{\bu} = \left(\frac{\hat{\mu}_{2+k}}{\hat{\mu}_2-\hat{\mu}_1}\right)_{k=1}^{\lvert u \rvert} \quad \text{and} \quad 
+    \hat{\overline{\bs}}_{\bu} = \left(\frac{\hat{\mu}_{2+\lvert \bu \rvert + k}}{\hat{\mu}_2-\hat{\mu}_1}\right)_{k=1}^{\lvert u \rvert}.
+\end{equation}
+
+We have designed QMCPy to estimate both $\hat{\underline{\bs}}_{\bu}$ and $\hat{\overline{\bs}}_{\bu}$ given arbitrary $\bu$. However, if a user is only interested in approximating $\hat{\underline{\bs}}_{\bu}$ for $\bu$ a set of singletons, $\lvert u_k \rvert = 1$ for $k=1, \lvert \bu \rvert$, it would be possible to reduce the $n$ sample approximation cost from $\$(2+\lvert \bu \rvert)n$ to $\$2n$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Order $1$ replicated designs are extended to Sobol' sequences \AGSNote{(digital nets?)} in \cite{replicated_designs_sobol_seq}. This extension was developed to facilitate the adaptive digital net cubature in \cite{reliable_sobol_indices_approx} which utilizes \cite{cubqmcsobol}. We have included the adaptive, guaranteed cubature algorithm in \cite{cubqmcsobol} in QMCPy and extend error analysis from \cite{reliable_sobol_indices_approx} in the following section. In the future, we hope to optimize QMCPy to utilize replicated designs when opportunities arise.
+
+\section{Adaptive Error Estimation}
+
+\AGSNote{based on the \emph{Error Criteria} Overleaf project by Fred.}
+
+\section{Additional QMCPy Features}
+
+\AGSNote{
+\begin{itemize}
+    \item Multiple stopping criteria, both MC and QMC
+    \item Variation reduction techniques such as
+    \begin{itemize}
+        \item importance sampling
+        \item control variates
+    \end{itemize}
+\end{itemize}
+}
+
+\section{Metalearning Studies}
+
+\subsection{Gradient Boosted Trees}
+
+\subsection{Neural Networks}
+
+
+\section{Conclusions and Future Work}
+
+\AGSNote{
+\begin{itemize}
+    \item Implement Tony's replicated designs when $U$ is compatible
+\end{itemize}
+}
 
 \printbibliography
 
