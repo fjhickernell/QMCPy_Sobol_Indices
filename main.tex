@@ -57,8 +57,8 @@
 \newcommand{\scnote}[1]{ {\textcolor{blue}  {\mbox{SC: } #1}}}
 \newcommand{\bepsabs}{\boldsymbol{\epsilon}_\text{abs}}
 \newcommand{\bepsrel}{\boldsymbol{\epsilon}_\text{rel}}
-\newcommand{\bepsabs}{\epsilon_\text{abs}}
-\newcommand{\bepsabs}{\epsilon_\text{rel}}
+\newcommand{\epsabs}{\epsilon_\text{abs}}
+\newcommand{\epsrel}{\epsilon_\text{rel}}
 
 % metadata
 \title{Robust Approximation of Sensitivity Indices in QMCPy}
@@ -76,7 +76,7 @@ Sobol' indices quantify the importance of a function's inputs to explaining the 
 
 \section{Background}
 
-Functional ANOVA (analysis of variance) decomposes a function $f \in \mathcal{L}^2(0,1)^d$ into the sum of orthogonal functions
+Functional ANOVA (analysis of variance) decomposes a function $f \in \calL^2(0,1)^d$ into the sum of orthogonal functions
 \begin{equation}
     f(\bx) = \sum_{u \in 1:d} f_u(\bx_u)
 \end{equation}
@@ -112,12 +112,15 @@ Given $u \in 1:d$, a simultaneous Monte Carlo approximation of both sensitivity 
     \bv_i = (\bx_{i,u},\bz_{i,-u}) = \left(\begin{aligned}x_{ij}, \quad & j \in u \\ z_{ij}, \quad & j \notin u \end{aligned}\right)_{j=1}^d,
 \end{equation}
 and compute approximations
+\begin{subequations}
+\label{eq:int_approxs}
 \begin{align}
     \hat{\mu}_1 &= \frac{1}{n} \sum_{i=1}^n f(\bx_i) \\ % first moment
     \hat{\mu}_2 &= \frac{1}{n} \sum_{i=1}^n f(\bx_i)^2 \\ % second moment
     \hat{\underline{\tau}}_u^2 &= \frac{1}{n} \sum_{i=1}^n f(\bx_i)[f(\bv_i) - f(\bz_i)], \\ % closed Sobol' index
     \hat{\overline{\tau}}_u^2 &= \frac{1}{2n} \sum_{i=1}^n [f(\bz_i)-f(\bv_i)]^2. % total Sobol' index 
 \end{align}
+\end{subequations}
 We may approximate the closed and total sensitivity via
 \begin{equation}
     \hat{\underline{s}}_u = \frac{\hat{\underline{\tau}}_u^2}{\hat{\mu}_2-\hat{\mu}_1} \quad \text{and} \quad 
@@ -143,14 +146,15 @@ The vector of integral approximations $\hat{\bmu}$ contains estimates of the fir
 We have designed QMCPy to estimate both $\hat{\underline{\bs}}_{\bu}$ and $\hat{\overline{\bs}}_{\bu}$ given arbitrary $\bu$. However, if a user is only interested in approximating $\hat{\underline{\bs}}_{\bu}$ for $\bu$ a set of singletons, $\lvert u_k \rvert = 1$ for $k=1, \dots, \lvert \bu \rvert$, it would be possible to reduce the $n$ sample approximation cost from $\$(2+\lvert \bu \rvert)n$ to $\$2n$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Order $1$ replicated designs are extended to Sobol' sequences \AGSNote{(digital nets?)} in \cite{replicated_designs_sobol_seq}. This extension was developed to facilitate the adaptive digital net cubature for sensitivity indices in \cite{reliable_sobol_indices_approx} which builds upon the algorithm in \cite{cubqmcsobol}. We have included the adaptive, guaranteed cubature algorithm of \cite{cubqmcsobol} in QMCPy and extend error analysis from \cite{reliable_sobol_indices_approx} in Section \ref{sec: Generalized Error Estimation}. In the future, we hope to optimize QMCPy to utilize replicated designs when opportunities arise.
 
 \section{Adaptive Quasi-Monte Carlo Stopping Criterion}
+\label{sec: Adaptive QMC SC}
 
 The Quasi-Monte Carlo (QMC) \emph{stopping criterion} algorithms included in QMCPy adaptively select the number of \emph{low discrepancy} samples, $n$, so that a user specified error criterion is met. These methods improve upon crude Monte Carlo in two aspects. First, while standard Monte Carlo uses IID (independent identically distributed) sampling nodes, QMC utilizes carefully coordinated LD (low discrepancy) sequences to enable significantly faster convergence to the true mean. While the error $\epsilon$ shrinks at a rate $\calO(n^{-1/2})$ for standard Monte Carlo, Quasi-Monte Carlo enables the significantly faster convergence rate $\calO(n^{-1+\delta})$ where $\delta >0$ is arbitrarily small. Second, QMCPy's stopping criterion continue to sample the integrand until the QMC approximation falls within a user-specified error tolerance. Quantifying the approximation error in such a manner requires assumptions on the integrand. QMC algorithms that achieve this typically utilize base $2$ LD sequences such as integration lattices or digital nets. Because these LD sequences exhibit better uniformity properties for powers of $2$ \AGSNote{cite}, the algorithms will continue to double the number of samples and approximate the error until the user specified error tolerance is met. We now describe a various stopping criterion in QMCPy
 
 A first idea for QMC cubature is based on repeated randomizations and the central limit theorem (CLT). To apply CLT to LD sequences, we take $R$ repeated randomizations of a LD sequence and apply CLT to the resulting $R$ mean estimates. Algorithm \ref{alg:CubQMCCLT} describes the \ct{CubQMCCLT} stopping criterion.
-% \begin{algorithm}
-%     \caption{\ct{CubQMCCLT} \AGSNote{TODO}}\label{alg:CubQMCCLT}
-%     \begin{algorithmic}
-%     \Require $n \geq 0$
+\begin{algorithm}
+    \caption{\ct{CubQMCCLT} \AGSNote{TODO}}\label{alg:CubQMCCLT}
+    \begin{algorithmic}
+    \Require $n \geq 0$
 %     \Ensure $y = x^n$
 %     \State $y \gets 1$
 %     \State $X \gets x$
@@ -164,8 +168,8 @@ A first idea for QMC cubature is based on repeated randomizations and the centra
 %         \State $N \gets N - 1$
 %     \EndIf
 %     \EndWhile
-%     \end{algorithmic}
-% \end{algorithm}
+    \end{algorithmic}
+\end{algorithm}
 This stopping criterion has two main shortcomings. First, CLT only applies as $n$ goes to $\infty$, which is not justified for our discrete approximations. Second, our estimation of the variance is not justified. While we combat this with an inflation factor, there is no guarantee the true variance is bounded by our heuristic approximation. 
 
 One way to avoid these issues is to utilize a functional analysis approach rather than a probabilistic one. Hickernell and Rugama have developed algorithms that approximate the error tolerance based on the decay of the integrands Fourier coefficients \cite{adaptive_qmc}. The \ct{CubQMCNetG} and \ct{CubQMCLatticeG} algorithms are available in QMCPy to accommodate both digital nets by way of Walsh coefficients \cite{cubqmcsobol} and integration lattices by way of complex exponential Fourier coefficients \cite{cubqmclattice}. These algorithms provide guaranteed error approximation for integrands lying within a cone of functions that can be parameterized to trade off function inclusion for algorithm speed. 
@@ -191,8 +195,10 @@ Let the user define $C: \bbR^\rho \times \bbR^\rho \to \bbR^\eta \times \bbR^\et
     \begin{align}
         C(\bp^+,\bp^-) = (\bp^+,\bp^-).
     \end{align}
-    \item Sensitivity indices have $\rho=2+2\lvert \bu \rvert$ bounds corresponding to the integrands approximated in \eqref{eq:bmuhat_approx} and $\eta=2\lvert \bu \rvert$ bounds on the sensitivity indies approximated in \eqref{eq:sensitivity_indices_vec}. Moreover, bounded integrand pieces are combined using $C(\bp^-,\bp^+) = \left(C_j^-(\bp^-,\bp^+), C_j^+(\bp^-,\bp^+\right)_{j=1}^{2\lvert \bu \rvert}$ and 
-    \begin{align}
+    \item Sensitivity indices have $\rho=2+2\lvert \bu \rvert$ bounds corresponding to the integrands approximated in \eqref{eq:bmuhat_approx} and $\eta=2\lvert \bu \rvert$ bounds on the sensitivity indies approximated in \eqref{eq:sensitivity_indices_vec}. Moreover, bounded integrand pieces are combined using $C(\bp^-,\bp^+) = \left(C_j^-(\bp^-,\bp^+), C_j^+(\bp^-,\bp^+\right)_{j=1}^{2\lvert \bu \rvert}$ and
+    \begin{subequations}
+    \label{eq:combine_sensitivities}
+    \begin{align} 
         C_j^-(\bp^-,\bp^+) 
         &= \max\left(\min_{\bmu \in [\bp^-,\bp^+]} \frac{\mu_{2+j}}{\mu_2-\mu_1^2}, 0 \right) \\
         &= \max\left(\frac{p_{2+j}^-}{p_2^+-(p_1^-)^2}, 0\right), \\
@@ -200,6 +206,7 @@ Let the user define $C: \bbR^\rho \times \bbR^\rho \to \bbR^\eta \times \bbR^\et
         &= \min\left(\max_{\bmu \in [\bp^-,\bp^+]} \frac{\mu_{2+j}}{\mu_2-\mu_1^2}, 1\right) \\
         & = \min\left(\frac{p_{2+j}^+}{p_2^- - (p_1^+)^2}, 1\right).
     \end{align}
+    \end{subequations}
 \end{itemize}
 
 Setting $C(\bp^-,\bp^+) = (\bs^-,\bs^+)$ to bound the combined solutions, we now wish to derive an optimal solution approximation $\hat{\bs}$ with respect to some error metric $h(\bs,\bepsilon)$ and Boolean criterion $\calC(\bs,\hat{\bs},\bepsilon)$.  \AGSNote{OK to reuse $\hat{\bs},\bepsilon$ notation?}. The QMC stopping criterion in QMCPy continue to double the sample size until $\calC(\bs,\hat{\bs})=\True$, which we determine to occur if and only if $\lvert \bs - \hat{\bs} \rvert \leq h(\bs,\bepsilon)$ where $\lvert \cdot \rvert$ is performed element wise. Error metric options include
@@ -245,18 +252,56 @@ The function $g(\bs^\pm,\cdot,\bepsilon)$ is monotonically decreasing for $\hat{
 \begin{align}
     g(\bs^-,\hat{\bs},\bepsilon) &= g(\bs^+,\hat{\bs},\bepsilon) \\
     \therefore \quad \hat{\bs} - \bs^- - h(\bs^-,\bepsilon) &= \bs^+ - \hat{\bs} - h(\bs^+,\bepsilon) \\ 
-    \therefore \quad \hat{\bs} &= \frac{1}{2}\left( \bs^- + \bs^+ +h(\bs^-,\bepsilon) - h(\bs^+,\bepsilon) \right).
+    \therefore \quad \hat{\bs} &= \frac{1}{2}\left[ \bs^- + \bs^+ +h(\bs^-,\bepsilon) - h(\bs^+,\bepsilon) \right].
 \end{align}
 Under this optimal choice of $\hat{\bs}$, 
-\begin{equation*}
+\begin{equation}
+    \label{eq:optimal_shat}
     2 \max g(\bs_\pm,\hat{\bs},\bepsilon) =  \bs^+  -  \bs^-  - h(\bs^-,\bepsilon) - h(\bs^+,\bepsilon).
-\end{equation*}
+\end{equation}
 
 If $\bs^- < 0 < \bs^+$, then \eqref{eq:h_abs_and_rel} cannot hold since $h(\bs,\bepsilon) \le \lvert \bs \rvert \bepsrel$, and so
-\begin{equation*}
+\begin{equation}
 2 \max g(\bs^\pm,\hat{\bs},\bepsilon) \ge \bs^+ (1 - \bepsrel) - \bs^- (1  - \bepsrel) = (\bs^+ - \bs^-)(1 - \bepsrel) > 0.
-\end{equation*}
+\end{equation}
 If $\bs^- < 0 < \bs^+$ and $\bepsabs = 0$ for \eqref{eq:h_abs_or_rel}, then $h(\bs,\bepsilon) = \lvert \bs \rvert \bepsrel$, and by a similar argument, \eqref{eq:h_abs_and_rel} again cannot be satisfied.
+
+\section{Efficient Stopping Criterion Implementation}
+
+The stopping criteria support multiple layers of vectorization. First, the input function may be a vectorized function $\mathbf{f} = (f_1,\dots,f_{\dtilde} )$ where $f_k \in \calL(0,1)^d$ for $k=1,\dots,\dtilde$. For sensitivity indices, we may simply redefine $\hat{\bmu}$ in \eqref{eq:bmuhat_approx} to be an element of $\bbR^{2+2\lvert \bu \rvert \times \dtilde}$, or equivalently a vector in $\bbR^{2\dtilde+2\dtilde\lvert \bu \rvert}$ for QMCPy compatibility. Second, the final solution, perhaps combining multiple integrand approximations, may itself be a vector such as the one defined for multi-index $\bu$ in  \eqref{eq:sensitivity_indices_vec}.
+
+
+QMCPy enables efficient computation via a vector of flags for the combined integrand that are appropriately propagated back to the underlying integrands. The following example illustrates this concept for sensitivity indices. Algorithm \ref{alg:QMCSL} describes an abstract computational procedure for finite dimensional QMC stopping criterion in QMCPy. 
+
+\subsection{Example: Compute Flags for Sensitivity Indices} 
+
+\AGSNote{
+    Better to describe this in terms of vectors for clarity on QMCPy implementation or with matrices for intuitive indexing? 
+}
+
+Suppose $\mathbf{f}:\bbR^d \to \bbR^\dtilde$ and we want to approximate singleton sensitivity indices, $\bu = \{ \{1\}, \dots, \{d\} \}$, for each of the $\dtilde$ integrands. An initial approximation draws $n=2^m$ samples, evaluates $\mathbf{f}$ at the $2^m(2+d)$ points required for \eqref{eq:int_approxs}, and computes Sobol' index error bounds $\bp^-,\bp^+ \in \bbR^{(2+d) \times \dtilde}$ using, for example, methods described in  Section \ref{sec: Adaptive QMC SC}. If we were to modify \eqref{eq:combine_sensitivities} and \eqref{eq:optimal_shat} to account for vector function $\mathbf{f}$, then we could compute sensitivity index error bounds $\bs^-,\bs^+ \in \bbR^{d \times \dtilde}$ and Boolean matrix $B \in \{\True,\False\}^{d \times \dtilde}$ where $B_{j,\jtilde}$ indicates whether the sensitivity index for $\{j\}$ requires better approximation for integrand $f_\jtilde$. 
+
+Let $\calB \in \{\True,\False\}^{(2+d) \times \dtilde}$ be a Boolean matrix where $\calB_{j,\jtilde}$ indicates whether $f_\jtilde$ requires a better approximation of $\mu_j$ in \eqref{eq:bmuhat_approx}. Note that $B_{j,\jtilde}$  depends on $p_{j,\jtilde}^\pm$, $p_{1,\jtilde}^\pm$, and $p_{2,\jtilde}^\pm$ by \eqref{eq:sensitivity_indices_vec}. So we may set $\calB_{3:(2+d),:}=B$ and then set $\calB_{1:2,\jtilde} = \text{any}(\calB_{3:(2+d),\jtilde})$ for $\jtilde=1,\dots,\dtilde$. In the above example we have used matrix notation to clarify the dependency structure. In QMCPy, sensitivity index approximation replaces $\mathbf{f}:[0,1]^d \to \bbR^\tilde{d}$ with $\mathbf{f}_\text{new}: [0,1]^d \to \bbR^{(2+\lvert \bu \rvert)\dtilde}$ and reshapes when necessary.
+
+\begin{algorithm}
+    \caption{\ct{QMCSL}: QMC Single Level Stopping Criterion \AGSNote{TODO}}\label{alg:QMCSL}
+    \begin{algorithmic}
+     \Require $n \geq 0$
+%     \Ensure $y = x^n$
+%     \State $y \gets 1$
+%     \State $X \gets x$
+%     \State $N \gets n$
+%     \While{$N \neq 0$}
+%     \If{$N$ is even}
+%         \State $X \gets X \times X$
+%         \State $N \gets \frac{N}{2}$  \Comment{This is a comment}
+%     \ElsIf{$N$ is odd}
+%         \State $y \gets y \times X$
+%         \State $N \gets N - 1$
+%     \EndIf
+%     \EndWhile
+    \end{algorithmic}
+\end{algorithm}
 
 \section{Additional QMCPy Features}
 
