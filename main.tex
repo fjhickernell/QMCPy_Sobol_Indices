@@ -54,8 +54,11 @@
 % macros
 \input ags.tex
 \newcommand{\FJH}[1]{{\color{purple}#1}}
-
 \newcommand{\scnote}[1]{ {\textcolor{blue}  {\mbox{SC: } #1}}}
+\newcommand{\bepsabs}{\boldsymbol{\epsilon}_\text{abs}}
+\newcommand{\bepsrel}{\boldsymbol{\epsilon}_\text{rel}}
+\newcommand{\bepsabs}{\epsilon_\text{abs}}
+\newcommand{\bepsabs}{\epsilon_\text{rel}}
 
 % metadata
 \title{Robust Approximation of Sensitivity Indices in QMCPy}
@@ -127,10 +130,12 @@ Approximating $\hat{\underline{s}}_u$ and $\hat{\overline{s}}_u$ with $n$ shared
 
 We now wish to approximate the closed and total sensitivities for a vector of index sets $\bu = \left(u_k\right)_{k=1}^{\lvert \bu \rvert}$ where $u_k \subset 1:d$. If $A: \bbR^{n \times 2d} \to \bbR^{2+2\lvert \bu \rvert}$ is to handle the approximation computation given a set of $n$ samples, then we set
 \begin{equation}
+    \label{eq:bmuhat_approx}
     A\left(\{\bx_i,\bz_i\}_{i=1}^n\right) = \hat{\bmu} = \left(\hat{\mu}_1,\hat{\mu}_2,\hat{\underline{\tau}}_{u_1}^2,\dots,\hat{\underline{\tau}}_{u_{\lvert \bu \rvert}}^2,\hat{\overline{\tau}}_{u_1}^2,\dots,\hat{\overline{\tau}}_{u_{\lvert \bu \rvert}}^2\right).
 \end{equation}
 The vector of integral approximations $\hat{\bmu}$ contains estimates of the first and second moments followed by $\lvert \bu \rvert$ closed then $\lvert \bu \rvert$ total sensitivity indices Sobol' indices. Now, the  estimates for closed and total indices be define as the length $\lvert \bu \rvert$ vectors
 \begin{equation}
+    \label{eq:sensitivity_indices_vec}
     \hat{\underline{\bs}}_{\bu} = \left(\frac{\hat{\mu}_{2+k}}{\hat{\mu}_2-\hat{\mu}_1}\right)_{k=1}^{\lvert u \rvert} \quad \text{and} \quad 
     \hat{\overline{\bs}}_{\bu} = \left(\frac{\hat{\mu}_{2+\lvert \bu \rvert + k}}{\hat{\mu}_2-\hat{\mu}_1}\right)_{k=1}^{\lvert u \rvert}.
 \end{equation}
@@ -169,21 +174,89 @@ Another set of QMC algorithms take a Bayesian approach to error estimation. Rath
 
 \section{Generalized Error Estimation} \label{sec: Generalized Error Estimation}
 
-Suppose we have a method that, given a compatible set of $n$ samples and corresponding function evaluations, can estimate the error $\hat{\bepsilon}$ between the Monte Carlo approximations $\hat{\bmu}$ and the true means $\bmu$ such that 
+\AGSNote{
+    \begin{itemize}
+        \item Based on the \emph{Error Criteria} Overleaf project by Fred.
+        \item vectorization seems clunky. Perhaps formulate unvectorized and tack vectorization back on at the end. 
+    \end{itemize}
+}
+
+Given a set of $2^m$ LD samples, QMC stopping criterion produce lower and upper bounds on the true means of integrands, $\bmu$. Let us call these bounds $\bp^-$ and $\bp^+$. Then 
 \begin{equation}
-    \lvert \bmu - \hat{\bmu} \rvert< \hat{\bepsilon}, \quad \text{ either guaranteed or with high probability.}
+    \bmu \in [\bp^-,\bp^+], \quad \text{ either guaranteed or with high probability.}
 \end{equation}
-
-
-
-\AGSNote{Based on the \emph{Error Criteria} Overleaf project by Fred.}
-
-In QMCPy, a user may specify three parameters to control the desired error tolerance: 
+Let the user define $C: \bbR^\rho \times \bbR^\rho \to \bbR^\eta \times \bbR^\eta$ to be the function combining bounds on the integrand pieces into bounds on the solution. For example:
 \begin{itemize}
-    \item $\epsilon_{\text{abs}}$, the absolute error tolerance,
-    \item $\epsilon_{\text{rel}}$, the relative error tolerance, and 
-    \item $\gamma$, the weight which trades off $\epsilon_{\text{abs}}$ for $\epsilon_{\text{rel}}$.
+    \item Standard Monte Carlo wishing to approximate $\bmu = \int_{[0,1]^d} f(\bx)\D\bx$ where $\bmu$ is a length $\rho$ vector will set $\eta = \rho$ and define 
+    \begin{align}
+        C(\bp^+,\bp^-) = (\bp^+,\bp^-).
+    \end{align}
+    \item Sensitivity indices have $\rho=2+2\lvert \bu \rvert$ bounds corresponding to the integrands approximated in \eqref{eq:bmuhat_approx} and $\eta=2\lvert \bu \rvert$ bounds on the sensitivity indies approximated in \eqref{eq:sensitivity_indices_vec}. Moreover, bounded integrand pieces are combined using $C(\bp^-,\bp^+) = \left(C_j^-(\bp^-,\bp^+), C_j^+(\bp^-,\bp^+\right)_{j=1}^{2\lvert \bu \rvert}$ and 
+    \begin{align}
+        C_j^-(\bp^-,\bp^+) 
+        &= \max\left(\min_{\bmu \in [\bp^-,\bp^+]} \frac{\mu_{2+j}}{\mu_2-\mu_1^2}, 0 \right) \\
+        &= \max\left(\frac{p_{2+j}^-}{p_2^+-(p_1^-)^2}, 0\right), \\
+        C_j^+(\bp^-,\bp^+) 
+        &= \min\left(\max_{\bmu \in [\bp^-,\bp^+]} \frac{\mu_{2+j}}{\mu_2-\mu_1^2}, 1\right) \\
+        & = \min\left(\frac{p_{2+j}^+}{p_2^- - (p_1^+)^2}, 1\right).
+    \end{align}
 \end{itemize}
+
+Setting $C(\bp^-,\bp^+) = (\bs^-,\bs^+)$ to bound the combined solutions, we now wish to derive an optimal solution approximation $\hat{\bs}$ with respect to some error metric $h(\bs,\bepsilon)$ and Boolean criterion $\calC(\bs,\hat{\bs},\bepsilon)$.  \AGSNote{OK to reuse $\hat{\bs},\bepsilon$ notation?}. The QMC stopping criterion in QMCPy continue to double the sample size until $\calC(\bs,\hat{\bs})=\True$, which we determine to occur if and only if $\lvert \bs - \hat{\bs} \rvert \leq h(\bs,\bepsilon)$ where $\lvert \cdot \rvert$ is performed element wise. Error metric options include
+\begin{align}
+    h(\bs,\bepsilon) & = \bepsilon \quad &&\text{absolute error satisfied}, \\
+    h(\bs,\bepsilon) &= \max\left(\bepsabs,\lvert \bs \rvert \bepsrel \right) \quad &&\text{absolute or relative error satisfied, and } \label{eq:h_abs_or_rel} \\
+    h(\bs,\bepsilon) &= \min\left(\bepsabs,\lvert \bs \rvert \bepsrel \right) \quad &&\text{absolute and relative error satisfied.} \label{eq:h_abs_and_rel}
+\end{align}
+Note that $\hat{\bs}$ is not necessarily the midpoint of the combined solution bounds:
+\begin{equation}
+    \hat{\bs} \neq \frac{\bs^-+\bs^+}{2} \quad \text{in general.}
+\end{equation}
+Define $g(\bs,\hat{\bs},\bepsilon)=\lvert \bs - \hat{\bs}\rvert -h(\bs,\bepsilon)$ and note that $\calC(\bs,\hat{\bs})=\True$ if and only if 
+\begin{equation}
+    \max_{\bs \in [\bs^-,\bs^+]} g(\bs,\hat{\bs},\bepsilon) \leq 0.
+\end{equation}
+We assume $h(\cdot,\bepsilon)$ satisfies 
+\begin{equation}
+    \lvert h(\bs_2,\bepsilon) - h(\bs_1,\bepsilon) \rvert \leq \lvert \bs_2 - \bs_1 \rvert \quad \text{element wise for any } \bs_1,\bs_2 \in \bbR^\eta.
+\end{equation}
+So for all $\bs \in [\bs^-,\bs^+]$ and $j=1,\dots,\eta$ we have either
+\begin{align}
+    g(s_j^-,\hat{s}_j,\epsilon_j)-g(s_j,\hat{s}_j,\epsilon_j) 
+    &= \lvert s_j^- - \hat{s}_j \rvert -h(s_j^-,\epsilon_j) - \lvert s_j - \hat{s}_j \rvert  + h(s_j,\epsilon_j) \\
+    &\geq s_j - s_j^- - \lvert h(s_j,\epsilon_j)-h(s_j^-,\epsilon_j) \rvert \\
+    &\geq 0 \quad \text{if } s_j^- \leq s_j \leq \hat{s}_j, \text{ or} \\
+    g(s_j^+,\hat{s}_j,\epsilon_j)-g(s_j,\hat{s}_j,\epsilon_j) 
+    &= \lvert s_j^+ - \hat{s}_j \rvert -h(s_j^+,\epsilon_j) - \lvert s_j - \hat{s}_j \rvert  + h(s_j,\epsilon_j) \\
+    &\geq s_j^+ - s_j - \lvert h(s_j,\epsilon_j)-h(s_j^+,\epsilon_j) \rvert \\
+    &\geq 0 \quad \text{if } \hat{s}_j \leq s_j \leq s_j^+.
+\end{align}
+This means that $g(\cdot,\hat{\bs},\bepsilon)$ attains its maximum on the boundary of $[\bs^-,\bs^+]$:
+\begin{equation}
+    \max_{\bs \in [\bs^-,\bs^+]} g(\bs,\hat{\bs},\bepsilon) = \max g(\bs^\pm,\hat{\bs},\bepsilon)
+\end{equation}
+where
+\begin{equation}
+    \max g(\bs^\pm,\hat{\bs},\bepsilon) = \left(\max\left(g(s_j^+,\hat{s}_j,\epsilon_j),g(s_j^-,\hat{s}_j,\epsilon_j)\right)\right)_{j=1}^\eta
+\end{equation}
+is element wise. 
+
+The function $g(\bs^\pm,\cdot,\bepsilon)$ is monotonically decreasing for $\hat{\bs} < \bs^\pm$ and monotonically increasing for $\hat{\bs} > \bs^\pm$. This means that the optimal choice of $\hat{\bs}$ to minimize $\max g(\bs^\pm,\hat{\bs},\bepsilon)$ lies in $[\bs^-,\bs^+]$ and satisfies
+\begin{align}
+    g(\bs^-,\hat{\bs},\bepsilon) &= g(\bs^+,\hat{\bs},\bepsilon) \\
+    \therefore \quad \hat{\bs} - \bs^- - h(\bs^-,\bepsilon) &= \bs^+ - \hat{\bs} - h(\bs^+,\bepsilon) \\ 
+    \therefore \quad \hat{\bs} &= \frac{1}{2}\left( \bs^- + \bs^+ +h(\bs^-,\bepsilon) - h(\bs^+,\bepsilon) \right).
+\end{align}
+Under this optimal choice of $\hat{\bs}$, 
+\begin{equation*}
+    2 \max g(\bs_\pm,\hat{\bs},\bepsilon) =  \bs^+  -  \bs^-  - h(\bs^-,\bepsilon) - h(\bs^+,\bepsilon).
+\end{equation*}
+
+If $\bs^- < 0 < \bs^+$, then \eqref{eq:h_abs_and_rel} cannot hold since $h(\bs,\bepsilon) \le \lvert \bs \rvert \bepsrel$, and so
+\begin{equation*}
+2 \max g(\bs^\pm,\hat{\bs},\bepsilon) \ge \bs^+ (1 - \bepsrel) - \bs^- (1  - \bepsrel) = (\bs^+ - \bs^-)(1 - \bepsrel) > 0.
+\end{equation*}
+If $\bs^- < 0 < \bs^+$ and $\bepsabs = 0$ for \eqref{eq:h_abs_or_rel}, then $h(\bs,\bepsilon) = \lvert \bs \rvert \bepsrel$, and by a similar argument, \eqref{eq:h_abs_and_rel} again cannot be satisfied.
 
 \section{Additional QMCPy Features}
 
