@@ -14,6 +14,8 @@
 \usepackage{mathptmx}
 \usepackage{verbatim}
 \usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 % hyperlinks
 \usepackage{hyperref}
@@ -133,11 +135,55 @@ The vector of integral approximations $\hat{\bmu}$ contains estimates of the fir
     \hat{\overline{\bs}}_{\bu} = \left(\frac{\hat{\mu}_{2+\lvert \bu \rvert + k}}{\hat{\mu}_2-\hat{\mu}_1}\right)_{k=1}^{\lvert u \rvert}.
 \end{equation}
 
-We have designed QMCPy to estimate both $\hat{\underline{\bs}}_{\bu}$ and $\hat{\overline{\bs}}_{\bu}$ given arbitrary $\bu$. However, if a user is only interested in approximating $\hat{\underline{\bs}}_{\bu}$ for $\bu$ a set of singletons, $\lvert u_k \rvert = 1$ for $k=1, \lvert \bu \rvert$, it would be possible to reduce the $n$ sample approximation cost from $\$(2+\lvert \bu \rvert)n$ to $\$2n$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Order $1$ replicated designs are extended to Sobol' sequences \AGSNote{(digital nets?)} in \cite{replicated_designs_sobol_seq}. This extension was developed to facilitate the adaptive digital net cubature in \cite{reliable_sobol_indices_approx} which utilizes \cite{cubqmcsobol}. We have included the adaptive, guaranteed cubature algorithm in \cite{cubqmcsobol} in QMCPy and extend error analysis from \cite{reliable_sobol_indices_approx} in the following section. In the future, we hope to optimize QMCPy to utilize replicated designs when opportunities arise.
+We have designed QMCPy to estimate both $\hat{\underline{\bs}}_{\bu}$ and $\hat{\overline{\bs}}_{\bu}$ given arbitrary $\bu$. However, if a user is only interested in approximating $\hat{\underline{\bs}}_{\bu}$ for $\bu$ a set of singletons, $\lvert u_k \rvert = 1$ for $k=1, \dots, \lvert \bu \rvert$, it would be possible to reduce the $n$ sample approximation cost from $\$(2+\lvert \bu \rvert)n$ to $\$2n$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Order $1$ replicated designs are extended to Sobol' sequences \AGSNote{(digital nets?)} in \cite{replicated_designs_sobol_seq}. This extension was developed to facilitate the adaptive digital net cubature for sensitivity indices in \cite{reliable_sobol_indices_approx} which builds upon the algorithm in \cite{cubqmcsobol}. We have included the adaptive, guaranteed cubature algorithm of \cite{cubqmcsobol} in QMCPy and extend error analysis from \cite{reliable_sobol_indices_approx} in Section \ref{sec: Generalized Error Estimation}. In the future, we hope to optimize QMCPy to utilize replicated designs when opportunities arise.
 
-\section{Adaptive Error Estimation}
+\section{Adaptive Quasi-Monte Carlo Stopping Criterion}
 
-\AGSNote{based on the \emph{Error Criteria} Overleaf project by Fred.}
+The Quasi-Monte Carlo (QMC) \emph{stopping criterion} algorithms included in QMCPy adaptively select the number of \emph{low discrepancy} samples, $n$, so that a user specified error criterion is met. These methods improve upon crude Monte Carlo in two aspects. First, while standard Monte Carlo uses IID (independent identically distributed) sampling nodes, QMC utilizes carefully coordinated LD (low discrepancy) sequences to enable significantly faster convergence to the true mean. While the error $\epsilon$ shrinks at a rate $\calO(n^{-1/2})$ for standard Monte Carlo, Quasi-Monte Carlo enables the significantly faster convergence rate $\calO(n^{-1+\delta})$ where $\delta >0$ is arbitrarily small. Second, QMCPy's stopping criterion continue to sample the integrand until the QMC approximation falls within a user-specified error tolerance. Quantifying the approximation error in such a manner requires assumptions on the integrand. QMC algorithms that achieve this typically utilize base $2$ LD sequences such as integration lattices or digital nets. Because these LD sequences exhibit better uniformity properties for powers of $2$ \AGSNote{cite}, the algorithms will continue to double the number of samples and approximate the error until the user specified error tolerance is met. We now describe a various stopping criterion in QMCPy
+
+A first idea for QMC cubature is based on repeated randomizations and the central limit theorem (CLT). To apply CLT to LD sequences, we take $R$ repeated randomizations of a LD sequence and apply CLT to the resulting $R$ mean estimates. Algorithm \ref{alg:CubQMCCLT} describes the \ct{CubQMCCLT} stopping criterion.
+% \begin{algorithm}
+%     \caption{\ct{CubQMCCLT} \AGSNote{TODO}}\label{alg:CubQMCCLT}
+%     \begin{algorithmic}
+%     \Require $n \geq 0$
+%     \Ensure $y = x^n$
+%     \State $y \gets 1$
+%     \State $X \gets x$
+%     \State $N \gets n$
+%     \While{$N \neq 0$}
+%     \If{$N$ is even}
+%         \State $X \gets X \times X$
+%         \State $N \gets \frac{N}{2}$  \Comment{This is a comment}
+%     \ElsIf{$N$ is odd}
+%         \State $y \gets y \times X$
+%         \State $N \gets N - 1$
+%     \EndIf
+%     \EndWhile
+%     \end{algorithmic}
+% \end{algorithm}
+This stopping criterion has two main shortcomings. First, CLT only applies as $n$ goes to $\infty$, which is not justified for our discrete approximations. Second, our estimation of the variance is not justified. While we combat this with an inflation factor, there is no guarantee the true variance is bounded by our heuristic approximation. 
+
+One way to avoid these issues is to utilize a functional analysis approach rather than a probabilistic one. Hickernell and Rugama have developed algorithms that approximate the error tolerance based on the decay of the integrands Fourier coefficients \cite{adaptive_qmc}. The \ct{CubQMCNetG} and \ct{CubQMCLatticeG} algorithms are available in QMCPy to accommodate both digital nets by way of Walsh coefficients \cite{cubqmcsobol} and integration lattices by way of complex exponential Fourier coefficients \cite{cubqmclattice}. These algorithms provide guaranteed error approximation for integrands lying within a cone of functions that can be parameterized to trade off function inclusion for algorithm speed. 
+
+Another set of QMC algorithms take a Bayesian approach to error estimation. Rather than assume the function lies within a cone, these stopping criterion assume the integrand is an instance of a Gaussian process. Utilizing the properties of LD sequences allows fast approximation of Gaussian process hyperparameters and guarantees on error bounds. These algorithms are available in QMCPy as \ct{CubQMCBayesNetG} for digital nets \AGSNote{cite} and \ct{CubQMCBayesLatticeG} for LD integration lattices \cite{cubqmcbayeslattice}. 
+
+\section{Generalized Error Estimation} \label{sec: Generalized Error Estimation}
+
+Suppose we have a method that, given a compatible set of $n$ samples and corresponding function evaluations, can estimate the error $\hat{\bepsilon}$ between the Monte Carlo approximations $\hat{\bmu}$ and the true means $\bmu$ such that 
+\begin{equation}
+    \lvert \bmu - \hat{\bmu} \rvert< \hat{\bepsilon}, \quad \text{ either guaranteed or with high probability.}
+\end{equation}
+
+
+
+\AGSNote{Based on the \emph{Error Criteria} Overleaf project by Fred.}
+
+In QMCPy, a user may specify three parameters to control the desired error tolerance: 
+\begin{itemize}
+    \item $\epsilon_{\text{abs}}$, the absolute error tolerance,
+    \item $\epsilon_{\text{rel}}$, the relative error tolerance, and 
+    \item $\gamma$, the weight which trades off $\epsilon_{\text{abs}}$ for $\epsilon_{\text{rel}}$.
+\end{itemize}
 
 \section{Additional QMCPy Features}
 
@@ -149,6 +195,7 @@ We have designed QMCPy to estimate both $\hat{\underline{\bs}}_{\bu}$ and $\hat{
         \item importance sampling
         \item control variates
     \end{itemize}
+    \item vectorized integrands $\boldsymbol{f}$
 \end{itemize}
 }
 
