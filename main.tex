@@ -19,14 +19,16 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 %\usepackage{bbm}
-%\usepackage{booktabs}
+
 %\usepackage{mathptmx}
 %\usepackage{verbatim}
 %\usepackage{bm}
 %   figures, tables, ...
 \usepackage{algpseudocode}
 \usepackage{algorithm}
-%\usepackage{graphicx}
+\usepackage{graphicx}
+\usepackage{booktabs}
+%\usepackage{multirow}%http://ctan.org/pkg/multirow
 
 % python
 \usepackage{listings}
@@ -106,11 +108,11 @@ Many quantities of interest may be formulated as functions of multiple integrand
 
 Monte Carlo (MC) methods have proven to be an efficient technique for high dimensional numerical integration. Quasi-Monte Carlo (QMC) offers even greater efficiency over crude Monte Carlo for integrands with low effective dimension \AGSNote{cite}. Numerous MC and QMC methods have been developed to adaptively sample an integrand and construct error bounds that hold absolutely or with high probability for nicely behaved integrands. 
 
-This work extends some existing QMC methods to adaptively approximate a function of multiple integrands to within a user-specified error tolerance. Our extension leverages shared samples, custom error bound propagation, multi-dimensional vectorization, and parallel function evaluation. The resulting routines are implemented into the QMCPy Python package \cite{QMCPy} with is distributed on both GitHub and PyPI. 
+This work extends some existing QMC methods to adaptively approximate a function of multiple integrands to within a user-specified error tolerance. Our extension leverages shared samples, custom error bound propagation, multi-dimensional vectorization, and parallel function evaluation. The resulting routines are implemented into the QMCPy Python package \cite{QMCPy} which is distributed on both GitHub and PyPI. 
 
 \section{Monte Carlo Methods}
 
-Monte Carlo methods are well-suited to approximate the expected value a random variable. Suppose we would like to approximating the vector mean $\bmu = \bbE[f(X)] \in \bbR^\rho$ where $X\sim\calU(0,1)^d$ and  $f: [0,1]^d \to \bbR^\rho$ is a vectorized objective function such that $f(\cdot)=(f_1(\cdot),\dots,f_\rho(\cdot))$.  Crude Monte Carlo computes the approximation 
+Monte Carlo methods are well-suited to approximate the expected value a random variable. Suppose we would like to approximate the vector mean $\bmu = \bbE[f(X)] \in \bbR^\rho$ where $X\sim\calU(0,1)^d$ and  $f: [0,1]^d \to \bbR^\rho$ is a vectorized objective function such that $f(\cdot)=(f_1(\cdot),\dots,f_\rho(\cdot))$.  Crude Monte Carlo computes the approximation 
 \begin{equation}
     \label{eq:mcapprox}
     \hat{\bmu} = \frac{1}{n}\sum_{i=1}^n f(\bx_i) \approx \int_{[0,1]^d}f(\bx)\D\bx = \bmu
@@ -120,7 +122,7 @@ using $\bx_1,\dots,\bx_n \in [0,1]^d$. While the standard uniform choice for $X$
 Crude Monte Carlo methods choose sampling nodes to be independent and identically distributed (IID). That is, $\bx_1,\dots,\bx_n \simiid \calU[0,1]^d$.
 The error in approximating $\bmu$ by $\hat{\bmu}$ based on IID nodes is  $\calO(n^{-1/2})$. 
 
-Quasi-Monte Carlo (QMC) methods choose sampling nodes in a carefully coordinated manner to avoid the gaps and clusters observed in IID nodes.  Discrepancy measures quantify how closely the discrete distribution such points matches a target distribution. QMC nodes have low discrepancy (LD) with the standard uniform distribution compared to IID nodes. Popular LD node sets include the Halton points, digital nets, and integration lattices \AGSNote{cite}. The error in approximating $\bmu$ by $\hat{\bmu}$ based on LD nodes is  $\calO(n^{-1+\delta})$ where $0 < \delta \ll 1/2$. This convergence rate for QMC methods is significantly faster than the rate for crude Monte Carlo when $f(X)$ has low effective dimension, see \AGSNote{cite}. 
+Quasi-Monte Carlo (QMC) methods choose sampling nodes in a carefully coordinated manner to avoid the gaps and clusters observed in IID nodes.  Discrepancy measures quantify how closely the discrete distribution of such points matches a target distribution. QMC nodes have low discrepancy (LD) with the standard uniform distribution compared to IID nodes. Popular LD node sets include the Halton points, digital nets, and integration lattices \AGSNote{cite}. The error in approximating $\bmu$ by $\hat{\bmu}$ based on LD nodes is  $\calO(n^{-1+\delta})$ where $0 < \delta \ll 1/2$. This convergence rate for QMC methods is significantly faster than the rate for crude Monte Carlo when $f(X)$ has low effective dimension, see \AGSNote{cite}. 
 
 The QMC methods in this article rely on LD sequences that are extensible in both dimension and number of samples. This enables our algorithms to utilize shared point sets and adaptively increase the number of points used to estimate $\hat{\bmu}$ without needing to discard previous observations. For more on extensible LD sequence see \AGSNote{cite}. Such LD sequences are often implemented in base 2 for computational efficiently and therefore prefer sampling at the first $2^m$ nodes in the sequence to attain low discrepancy measures. Thus, existing QMC algorithms tend to iteratively  double the sample size until the error bounds on $\bmu$ are sufficiently tight. 
 
@@ -163,6 +165,10 @@ The following error estimation techniques are implemented, among others, into th
 where $S_r = \sqrt{R^{-1}(1-R)^{-1}\sum_{i=1}^R(\hat{\mu}_r - \hat{\mu})^2}$ and $t_{R-1}^{1-\alpha/2}$ is the inverse CDF of the student T distribution with $R-1$ degrees of freedom. More information on this method can be found in \cite[Chapter 17]{mcbook} or \cite{qmc4pde_preprint}.
 
 \texttt{CubQMC\{Net,Lattice\}G: }While \eqref{eq:qmc_clt_mu_bounds} provides intuitive, practical bounds, this approximation requires $Rn$ function evaluations which may be prohibitively large.  \citeauthor{cubqmclattice} overcome this challenges by developing algorithms that track the decay of Fourier coefficients based on a single randomized LD sequence ($R=1$) \cite{adaptive_qmc}. These algorithms provide guaranteed error bounds on $\bmu$ for functions lying within an appropriately parameterized cone by tracking the decay of either the Walsh coefficients for digital sequences \cite{cubqmcsobol} or the complex exponential Fourier coefficients for integration lattices \cite{cubqmclattice}.  
+
+%%
+%% TODO: Compare cubQMCBayes against cubQMC algorithms
+%% For What kind of integrands, Bayes algos work better
 
 \texttt{CubQMCBayes\{Net,Lattice\}G: } Another pair of QMC algorithms take a Bayesian approach to error estimation. Rather than assume the function lies within a cone, these algorithms assume the integrand is an instance of a Gaussian process. Utilizing special kernels matched to LD sequences allows fast approximation of Gaussian process hyperparameters and provides guaranteed error estimation. These Bayesian QMC algorithms are also available for both digital nets \AGSNote{cite} and integration lattices  \cite{cubqmcbayeslattice}.
 
@@ -273,8 +279,7 @@ Algorithm \ref{algo:qmcsc} details the typical QMC stopping criterion included i
 
 \section{Examples}
 
-\AGSNote{\subsection{Vectorized Acquisition Functions for Bayesian Optimization}}
-
+\subsection{Vectorized Acquisition Functions for Bayesian Optimization}
 
 \subsection{Bayesian Logistic Regression}
 
@@ -311,14 +316,37 @@ Moreover, we set the dependency function $D: \tfset^d \to \tfset^{2 \times d}$ t
     D(\bb) =  \begin{pmatrix} \bb \\ \bb \end{pmatrix}.
 \end{equation*}
 
-\AGSNote{\subsubsection{XYZ Dataset Example}}
+\subsubsection{Haberman's Dataset Example}
 
+Here we perform logistic regression on the Haberman's Survival Dataset retreived from the UCI Machine Learning Repository \cite{uci_ml_repo}. This dataset concerns a study between 1958 and 1970 at the University of Chicago's Billings Hospital that tracked the survival of patients five years after undergoing treatment for breast cancer. Predictors include the age of patient at the time of operation, operation year after 1900 e.g. 65 is 1965, and number of positive axillary nodes detected. The binary response variable indicates the patients survival status five years after the operation. 
+
+We use 2/3 of the dataset for training and the remaining 1/3 for testing. The training set has 151 positive records and 54 negative records while the testing set has 74 positive records and 27 negative records. The class imbalance reflects the fact that most patients in the study survived longer than 5 years after the operation. Since we value identifying at risk patients, we seek models with a low number of false negative predictions i.e. we desire models with high recall. Table \ref{tab:lr_models} compares a Bayesian logistic model against logistic regression models fit with an Elastic net regularization penalty
+$$\min_{\bs,c} \left[\frac{1-\lambda}{2} \lVert \bs \rVert_2^2 + \lambda \lVert \bs \rVert_1+C\sum_{i=1}^N\log(\exp(-y_i(\bx_i.\bs+c))+1)\right]$$
+where $C>0$ constant and $\lambda \in [0,1]$ controls the trade-off between $l_1$ and $l_2$ regularization. The Elastic-Net models were fit using the scikit-learn Python package with the ``saga'' optimizer \cite{scikit-learn}. The Bayesian logistic regression model was fit with $\bvarepsabs=.05$, $\bvarepsrel=.5$, error metric $h$ matching \eqref{eq:h_abs_and_rel}. Note that the Bayesian logistic regression model has the highest test recall metric.  
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l|rrrr|rrr}
+        Method &\multicolumn{4}{|c|}{Coefficients} &\multicolumn{3}{c}{Test Metrics \%}\\
+        {} &       Age &  1900 Year &  Axillary Nodes &  Intercept &  Accuracy &  Precision &   Recall \\
+        \midrule
+        % begin insert
+        Elastic-Net $\lambda=0.0$ & -1.23e-02 &   3.44e-02 &       -1.15e-01 &   1.99e-03 &     74.3 &      76.7 &   93.2 \\
+        Elastic-Net $\lambda=0.5$ & -1.20e-02 &   3.42e-02 &       -1.15e-01 &   2.03e-03 &     74.3 &      76.7 &   93.2 \\
+        Elastic-Net $\lambda=1.0$ & -1.18e-02 &   3.39e-02 &       -1.14e-01 &   2.06e-03 &     74.3 &      76.7 &   93.2 \\
+        Bayesian                & -4.14e-03 &   1.30e-01 &       -1.57e-01 &   8.03e-03 &     74.3 &      74.0 &  100.0 \\
+        % end insert
+        \bottomrule
+    \end{tabular}
+    \caption{Comparison of Logistic regression models for the Haberman dataset.}
+    \label{tab:lr_models}
+\end{table}
 \subsection{Sensitivity Indices}
 
 Sensitivity analysis quantifies how uncertainty in a functions output may be attributed to subsets of function inputs. Functional ANOVA (analysis of variance) decomposes an objective function $f \in L^2((0,1)^d)$ into the sum of orthogonal functions $(f_u)_{u \subseteq 1:d}$. Here $1:d$ denotes the set of all dimensions $\{1,\dots,d\}$ and $f_u \in L^2((0,1)^{\lvert u \rvert})$ denotes a sub-function dependent only on inputs $\bx_u = (x_j)_{j \in u}$. By construction, these sub-functions sum to the objective function so that
-\begin{equation*}
-    f(\bx) = \sum_{u \subseteq 1:d} f_u(\bx_u)
-\end{equation*}
+\begin{equation}
+    f(\bx) = \sum_{u \subseteq 1:d} f_u(\bx_u) \label{eq:fanova}
+\end{equation}
 \cite[Appendix A]{mcbook}. The orthogonality of sub-functions enables the variance of $f$ to be decomposed into the sum of variances of sub-functions. Specifically, denoting the variance of $f$ by $\sigma^2$, we may write
 \begin{equation*}
     \sigma^2 = \sum_{u \subseteq 1:d} \sigma^2_u
@@ -356,19 +384,19 @@ For $\bmu$, the first row contains closed Sobol' indices, the second row contain
 Then bounds from individual to combined solutions may be transformed via $C^-,C^+:\bbR^{6 \times k} \to \bbR^{2 \times k}$ defined, for $j=1,\dots,k$, by  
 \begin{align*}
     C_{1j}^-(\bmu^-,\bmu^+) 
-    &= \max\left(0,\min_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{1j}}{\mu_{5j}-\mu_{3j}^2}\right) \\
+    &= \text{clip}\left(\min_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{1j}}{\mu_{5j}-\mu_{3j}^2}\right) \\
     &= \begin{cases} 
-        \min\left(\frac{\mu_{1j}^-}{\mu_{5j}^+-\left(\mu_{3j}^-\right)^2},\frac{\mu_{1j}^-}{\mu_{5j}^+-\left(\mu_{3j}^+\right)^2}\right), & \mu_{1j}^->0 \quad\text{ and }\quad \mu_{5j}^--\left(\mu_{3j}^\pm\right)^2>0 \\
+        \text{clip}\left(\min\left(\frac{\mu_{1j}^-}{\mu_{5j}^+-\left(\mu_{3j}^-\right)^2},\frac{\mu_{1j}^-}{\mu_{5j}^+-\left(\mu_{3j}^+\right)^2}\right)\right), & \mu_{5j}^- - \left(\mu_{3j}^\pm\right)^2 >0 \\
         0, &\text{else}
     \end{cases} \\
     C_{1j}^+(\bmu^-,\bmu^+) 
-    &= \min\left(1,\max_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{1j}}{\mu_{5j}-\mu_{3j}^2}\right) \\
+    &= \text{clip}\left(\max_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{1j}}{\mu_{5j}-\mu_{3j}^2}\right) \\
     &= \begin{cases} 
-        \max\left(\frac{\mu_{1j}^+}{\mu_{5j}^--\left(\mu_{3j}^-\right)^2},\frac{\mu_{1j}^+}{\mu_{5j}^--\left(\mu_{3j}^+\right)^2}\right), & \mu_{1j}^->0 \quad\text{ and }\quad \mu_{5j}^--\left(\mu_{3j}^\pm\right)^2>0 \\
-        0, &\text{else}
+        \text{clip}\left(\max\left(\frac{\mu_{1j}^+}{\mu_{5j}^--\left(\mu_{3j}^-\right)^2},\frac{\mu_{1j}^+}{\mu_{5j}^--\left(\mu_{3j}^+\right)^2}\right)\right), & \mu_{5j}^- - \left(\mu_{3j}^\pm\right)^2 >0 \\
+        1, &\text{else}
     \end{cases}
 \end{align*}
-Similarly, we may compute $C_{2j}^-$ by replacing indices 1,3,5 in $C_{1j}^-$ with indices 2,4,6 respectively and likewise for computing $C_{2j}^+$ from $C_{1j}^+$. Above, we have simplified the bounds using the facts that sensitivity indices are between 0 and 1, the variance of $f$ is non-negative, and Sobol' indices are non-negative. 
+where $\text{clip}(\cdot) = \min(1,\max(0,\cdot))$ restricts values between 0 and 1. Similarly, we may compute $C_{2j}^-$ by replacing indices 1,3,5 in $C_{1j}^-$ with indices 2,4,6 respectively and likewise for computing $C_{2j}^+$ from $C_{1j}^+$. Above, we have simplified the bounds using the facts that sensitivity indices are between 0 and 1, the variance of $f$ is non-negative, and Sobol' indices are non-negative. 
 
 Moreover, the dependency function $D:\tfset^{2 \times k} \to \tfset^{6 \times k}$ may be defined to vertically stack combined flags three times to produce individual flags so that 
 \begin{equation*}
@@ -380,7 +408,7 @@ Sensitivity indices present an important special case for computational complexi
 
 If a user is only interested in approximating singleton sensitivity indices, $u_j = \{j\}$ for $j=1,\dots,d$, then it is possible to reduce the cost from $\$(f)(2+d)2^m$ to $\$(f)2^{m+1}$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Such designs have been extended to  Sobol' sequences \AGSNote{(digital nets?)} in \cite{replicated_designs_sobol_seq} and utilized for sensitivity index approximation in \cite{reliable_sobol_indices_approx}. In the future, we plan to optimize QMCPy to utilize replicated designs when the opportunity arises.
 
-\AGSNote{\subsubsection{Ishigami Function}}
+\subsubsection{Ishigami Function Example}
 
 The Ishigami function \cite{ishigami1990importance} is defined for $T \sim \calU(-\pi,\pi)^3$ as
 \begin{equation*}
@@ -389,7 +417,23 @@ The Ishigami function \cite{ishigami1990importance} is defined for $T \sim \calU
 After a change of variables we may equivalently define the Ishigami function as 
 $f(X) = g\left(\pi(2X-1)\right)$ where $X \sim \calU(0,1)^3$. 
 
-\AGSNote{\subsubsection{Machine Learning}}
+Figure \ref{fig:ishigami_fu} shows exact functional ANOVA sub-functions $f_u$ for select $u \in 1:d$ and Figure \ref{fig:ishigami} shows approximate sensitivity indices for the Ishigami function. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\textwidth]{figs/ishigami_fu.pdf}
+    \caption{True Ishigami sub-functions $f_u$ for $u \in 1:d$ from \eqref{eq:fanova}.}
+    \label{fig:ishigami_fu}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\textwidth]{figs/ishigami.pdf}
+    \caption{Approximate closed and total sensitivity indices for the Ishigami function illustrating the relationship $\underline{s}_u + \overline{s}_{u^c} = 1$ for $u \in 1:d$.}
+    \label{fig:ishigami}
+\end{figure}
+
+\AGSNote{\subsubsection{Machine Learning Examples}}
 
 %\AGSNote{Maybe use the decision trees for iris dataset from \url{https://github.com/QMCSoftware/QMCSoftware/blob/iris/demos/iris.ipynb}. The results aren't that impressive since Iris is a pretty small dataset and sensitivity indices are somewhat automatic for decision trees. I'd like to do something like we have in this notebook though. This paper could include one or both of the analysis procedures. Hyperparameter importance is interesting, but currently doesn't have a lot of actionable results. Feature importance is more interesting / relevant, I'm leaning towards this. Art Owen and Chris Hoyt have done something similar for neural networks which is pretty interesting. Including both would be ideal (but time consuming).}
 
@@ -412,5 +456,23 @@ For all $\bs \in [\bs^-,\bs^+]$,
 \end{align*}
 
 }
+
+\AGSNote{
+NEI / QEI Demo from Mike McCourt on qmcpy.org
+
+https://arxiv.org/pdf/1807.02811.pdf
+
+http://proceedings.mlr.press/v70/wang17e/wang17e.pdf
+
+https://proceedings.neurips.cc/paper/2020/file/6fec24eac8f18ed793f5eaad3dd7977c-Paper.pdf
+
+https://www.jmlr.org/papers/volume20/18-225/18-225.pdf
+
+http://proceedings.mlr.press/v139/malkomes21a.html
+
+
+http://proceedings.mlr.press/v124/lee20a.html
+}
+
 \fi
 \end{document}
