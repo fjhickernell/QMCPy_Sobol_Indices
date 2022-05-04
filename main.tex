@@ -90,8 +90,10 @@ Quasi-Monte Carlo methods present an efficient approach for multivariate numeric
 
 TODO 
 \begin{itemize}
-    \item replace violation function $V$ with infinite bounds
-    \item flip boolean flags so True means sufficient approximation and False requires further computation
+    \item allow vectorized true measure's e.g. for $g:\bbR^d \to \bbR^\3$ let users pass in \\ 
+    \texttt{true\_measure = [Gaussian(1,2),Gaussian(3,4),Gaussian(5,6)]} \\
+    This will require allowing $g$ to accept an $n \times d \times k$ set of samples. This will be helpful e.g. when computing qEI vectorized expectation. \\ How to resolve this with the desire to let users pass in independent marginals \\ 
+    \texttt{true\_measure = [Gaussian(1,1),...,Gaussian(d,d)]}
     \item new PyPI release
 \end{itemize}
 MISC
@@ -162,15 +164,18 @@ The following error estimation techniques are implemented, among others, into th
     \mu^\pm = \hat{\mu} \pm t_{R-1}^{1-\alpha/2}S_r
     \label{eq:qmc_clt_mu_bounds}
 \end{equation}
-where $S_r = \sqrt{R^{-1}(1-R)^{-1}\sum_{i=1}^R(\hat{\mu}_r - \hat{\mu})^2}$ and $t_{R-1}^{1-\alpha/2}$ is the inverse CDF of the student T distribution with $R-1$ degrees of freedom. More information on this method can be found in \cite[Chapter 17]{mcbook} or \cite{qmc4pde_preprint}.
+where $S_r = \sqrt{R^{-1}(R-1)^{-1}\sum_{i=1}^R(\hat{\mu}_r - \hat{\mu})^2}$ and $t_{R-1}^{1-\alpha/2}$ is the inverse CDF of the student T distribution with $R-1$ degrees of freedom. More information on this method can be found in \cite[Chapter 17]{mcbook} or \cite{qmc4pde_preprint}.
 
-\texttt{CubQMC\{Net,Lattice\}G: }While \eqref{eq:qmc_clt_mu_bounds} provides intuitive, practical bounds, this approximation requires $Rn$ function evaluations which may be prohibitively large.  \citeauthor{cubqmclattice} overcome this challenges by developing algorithms that track the decay of Fourier coefficients based on a single randomized LD sequence ($R=1$) \cite{adaptive_qmc}. These algorithms provide guaranteed error bounds on $\bmu$ for functions lying within an appropriately parameterized cone by tracking the decay of either the Walsh coefficients for digital sequences \cite{cubqmcsobol} or the complex exponential Fourier coefficients for integration lattices \cite{cubqmclattice}.  
+\texttt{CubQMC\{Net,Lattice\}G: }While \eqref{eq:qmc_clt_mu_bounds} provides intuitive, practical bounds, this approximation requires $Rn$ function evaluations which may be prohibitively large.  \citeauthor{cubqmclattice} overcome this challenges by developing algorithms that track the decay of Fourier coefficients based on a single randomized LD sequence ($R=1$) \cite{adaptive_qmc}. These algorithms provide guaranteed error bounds on $\bmu$ for functions lying within an appropriately parameterized cone by tracking the decay of either the Walsh coefficients for digital sequences \cite{cubqmcsobol} or the complex exponential Fourier coefficients for integration lattices \cite{cubqmclattice}. In particular for \texttt{CubQMCLatticeG}, the cone comprises of functions whose Fourier series are absolutely convergent and whose true Fourier coefficients, decay steadily as wave-number tends to infinity.
 
 %%
 %% TODO: Compare cubQMCBayes against cubQMC algorithms
 %% For What kind of integrands, Bayes algos work better
 
-\texttt{CubQMCBayes\{Net,Lattice\}G: } Another pair of QMC algorithms take a Bayesian approach to error estimation. Rather than assume the function lies within a cone, these algorithms assume the integrand is an instance of a Gaussian process. Utilizing special kernels matched to LD sequences allows fast approximation of Gaussian process hyperparameters and provides guaranteed error estimation. These Bayesian QMC algorithms are also available for both digital nets \AGSNote{cite} and integration lattices  \cite{cubqmcbayeslattice}.
+\texttt{CubQMCBayes\{Net,Lattice\}G: } Another pair of QMC algorithms take a Bayesian approach to error estimation. Rather than assume the function lies within a cone, these algorithms assume the integrand is an instance of a Gaussian process. Alternatively rather than assume the integrands are deterministic, here assumes as an instance of a random Gaussian process.  Utilizing special kernels matched to LD sequences allows fast approximation of Gaussian process hyperparameters and provides guaranteed error estimation. These Bayesian QMC algorithms are also available for both digital nets \AGSNote{cite} and integration lattices  \cite{cubqmcbayeslattice}. Similar to \texttt{CubQMC\{Net,Lattice\}G}, Fourier and Walsh transform coefficients are used, respectively with Lattice and digital nets. But the coefficients are used to estimate credible intervals. Thus it provides much stronger theoretical background. These algorithms need to estimate shape and scale parameters to parameterize the covariance kernels, which are to be searched using optimization techniques, leading to much more computational cost. 
+
+The Bayesian cubature algorithms are not recommended where the integrand's Fourier coefficients are not expected to be well behaved. Also not recommended for very dimensional integrands for which the parameters search will be computationally prohibitive.
+One advantage of using the digital-net cubature is the integrand does not have to be periodic in the unit cube $[0, 1)^d$ whereas the lattice based cubature algorithm expects the integrand to be periodic. 
 
 \section{Optimal Approximation of a Combined Solution}
 
@@ -280,6 +285,25 @@ Algorithm \ref{algo:qmcsc} details the typical QMC stopping criterion included i
 \section{Examples}
 
 \subsection{Vectorized Acquisition Functions for Bayesian Optimization}
+
+Bayesian optimization (BO) attempts to find the global maximum of a black box function $f$ we assume is defined on $[0,1]^d$, perhaps after a change of variables. Here we assume $f$ is expensive to evaluate so we strategically select sampling locations that maximize some utility / acquisition function. 
+
+Concretely, suppose we have already collected data $D=\{\bx_i,y_i\}_{i=1}^n$ where $y_i = f(\bx_i)$. BO then fits a Gaussian process surrogate $g$ to data $D$ which we hope approximates the true function $f$ well. We choose the next $q$ sampling locations $X= (\bx_1,\dots,\bx_q)$ to maximize acquisition function $\alpha$ based on the surrogate $g$ so that 
+$$\bx_{n+1},\dots,\bx_{n+q} = \argmax_{X \in [0,1]^{q \times d}}\alpha(X).$$
+Many acquisition functions may be expressed as expectations
+$$\alpha(X) = \bbE[a(Y) | Y \sim P(g(X)|D)]$$ % https://botorch.org/docs/acquisition
+where $P(f(X)|D)$ is the posterior distribution of $f$ at $X$ given already observed data $D$. Here we focus on the q-Expected Improvement acquisition function
+$$a(\by) = \max_{1 \leq i \leq} (y_i - y^*)_+$$
+where $y^*= \max(y_1,\dots,y_n)$ is the current maximum and $(\cdot)_+ = \max(\cdot,0)$. 
+
+Now, suppose we are interested in computing the acquisition function values at $X_1,\dots,X_k \in [0,1]^{q \times d}$, candidate next-$q$ point set to maximize $\alpha$. We vectorize the computation of $\alpha(X_1),\dots,\alpha(X_k)$ to
+\begin{equation}
+    \begin{pmatrix} \alpha(X_1) \\ \dots \\ \alpha(X_k)\end{pmatrix} = \bbE\begin{pmatrix}a(\Phi_1^{-1}(X)) \\ \dots \\ a(\Phi_k^{-1}(X))\end{pmatrix}
+    \label{eq:qei_vec}
+\end{equation}
+where $X \sim \calU[0,1]^q$ and $\Phi_k$ is the CDF of the Gaussian posterior distribution $P(f(X_k)|D)$. 
+
+Since the quantity of interest is the vector of expectations in \eqref{eq:qei_vec}, the individual and combined solutions are the same, $\bmu = \bs \in \bbR_+^q$, and we may set both the error transformation functions $C^-,C^+$ and the dependency function $D$ to the identity function. In QMCPy, these identity functions are the default. 
 
 \subsection{Bayesian Logistic Regression}
 
