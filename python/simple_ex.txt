@@ -1,0 +1,47 @@
+import qmcpy as qp
+discrete_distrib = qp.Lattice(dimension=2,seed=7)
+true_measure = qp.Gaussian(
+    sampler = discrete_distrib,
+    mean = [0,1],
+    covariance = [[9,4],[4,5]])
+integrand = qp.CustomFun(
+    true_measure = true_measure,
+    g = lambda t: (t**2).sum(1))
+qmc_stop_crit = qp.CubQMCLatticeG(
+    integrand = integrand,
+    abs_tol = 1e-3,
+    rel_tol = 0)
+solution,data = qmc_stop_crit.integrate()
+print(solution)
+# [15.00012468]
+print(data)
+# LDTransformData (AccumulateData Object)
+#     solution        15.000
+#     indv_error      7.45e-04
+#     ci_low          14.999
+#     ci_high         15.001
+#     ci_comb_low     14.999
+#     ci_comb_high    15.001
+#     flags_comb      1
+#     flags_indv      1
+#     n_total         2^(17)
+#     n               2^(17)
+#     time_integrate  0.092
+# CubQMCLatticeG (StoppingCriterion Object)
+#     abs_tol         0.001
+#     rel_tol         0
+#     n_init          2^(10)
+#     n_max           2^(35)
+# CustomFun (Integrand Object)
+# Gaussian (TrueMeasure Object)
+#     mean            [0 1]
+#     covariance      [[9 4]
+#                     [4 5]]
+#     decomp_type     PCA
+# Lattice (DiscreteDistribution Object)
+#     d               2^(1)
+#     dvec            [0 1]
+#     randomize       1
+#     order           natural
+#     entropy         7
+#     spawn_key       ()

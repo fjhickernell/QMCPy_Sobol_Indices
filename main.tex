@@ -28,6 +28,7 @@
 \usepackage{algorithm}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{makecell}
 %\usepackage{multirow}%http://ctan.org/pkg/multirow
 
 % python
@@ -65,9 +66,10 @@
 \newcommand{\JRComment}[1]{{\color{violet} Jag: #1}}
 \newcommand{\FJH}[1]{{\color{purple}#1}}
 \newcommand{\scnote}[1]{ {\textcolor{blue}  {\mbox{SC: } #1}}}
+\DeclareMathOperator{\Order}{{\mathcal O}}
 
 % metadata
-\title{Quasi-Monte Carlo for Vector Functions of Integrals}
+\title{Monte Carlo for Vector Functions of Integrals}
 \author{Aleksei Sorokin, Jagadeeswaran Rathinavel}
 \date{\today}
 
@@ -77,7 +79,7 @@
 \maketitle
 
 \begin{abstract}
-Quasi-Monte Carlo methods present an efficient approach for multivariate numerical integration. Algorithms exist to adaptively sample the integrand until a user defined error tolerance is satisfied with theoretical guarantees or with high probability. This work describes our extension of such methods to support adaptive sampling to satisfy error criteria for vector functions of multiple integrals. Although several functions involving multiple integrals are being evaluated, only one low discrepancy sequence is required, albeit sometimes of larger dimension than the integration domain. These enhanced algorithms are implemented in the QMCPy Python package with support for vectorized, economical integrand evaluation. We exemplify these capabilities with examples from machine learning including the approximation of acquisition function values for Bayesian Optimization, coefficients for Bayesian logistic regression, and sensitivity indices for both hyperparameters and input features.
+Monte Carlo methods present an efficient approach for approximating the expected value of a random variable. Algorithms exist to adaptively sample the random variable until a user defined error tolerance is satisfied with theoretical guarantees or with high probability. This work describes our extension of such methods to support adaptive sampling to satisfy error criteria for vector functions of multiple expectations. Although several functions involving multiple expectations are being evaluated, only one random sequence is required, albeit sometimes of larger dimension than the underlying randomness. These enhanced Monte Carlo and Quasi-Monte Carlo algorithms are implemented in the QMCPy Python package with support for vectorized, economical function evaluation. We exemplify these capabilities on problems from machine learning and global sensitivity analysis.
 \end{abstract}
 
 \tableofcontents
@@ -90,15 +92,13 @@ Quasi-Monte Carlo methods present an efficient approach for multivariate numeric
 
 TODO 
 \begin{itemize}
+    \item Allow custom function to take in array of functions to construct vectorized functions. 
     \item allow vectorized true measure's e.g. for $g:\bbR^d \to \bbR^\3$ let users pass in \\ 
     \texttt{true\_measure = [Gaussian(1,2),Gaussian(3,4),Gaussian(5,6)]} \\
     This will require allowing $g$ to accept an $n \times d \times k$ set of samples. This will be helpful e.g. when computing qEI vectorized expectation. \\ How to resolve this with the desire to let users pass in independent marginals \\ 
     \texttt{true\_measure = [Gaussian(1,1),...,Gaussian(d,d)]}
+    \item \texttt{CubBayes} algorithms allow ndarray of \texttt{abs\_tol} and \texttt{rel\_tol}
     \item new PyPI release
-\end{itemize}
-MISC
-\begin{itemize}
-    \item Efficient estimation of the ANOVA mean dimension, with an application to neural net classification. Christopher R. Hoyt Stanford University. Art B. Owen Stanford University December 2020
 \end{itemize}
 }
 
@@ -106,132 +106,194 @@ MISC
 
 \section{Introduction}
 
-Many quantities of interest may be formulated as functions of multiple integrands. For example, we may be interested in computing the expected value of a random function at multiple locations. In other examples we may be interested in computing the ratio of two integrals.
+Many quantities of interest may be formulated as functions of multiple expectations. In the simplest case one may be interested in computing a vector of expectations. Here the function combining expectations is the identity. A more nuanced case is approximating the ratio of expectations for example when computing the Bayesian posterior mean. More complex combinations of integrands are necessitated in other domains such as global sensitivity analysis where a quantity of interest is the ratio of one expectation to the difference of two other expectations.
 
-Monte Carlo (MC) methods have proven to be an efficient technique for high dimensional numerical integration. Quasi-Monte Carlo (QMC) offers even greater efficiency over crude Monte Carlo for integrands with low effective dimension \AGSNote{cite}. Numerous MC and QMC methods have been developed to adaptively sample an integrand and construct error bounds that hold absolutely or with high probability for nicely behaved integrands. 
+Monte Carlo (MC) methods have proven to be an efficient technique for approximating a single expectation. Quasi-Monte Carlo (QMC) methods  offers even greater efficiency when the random variable we are taking the expectation of has low effective dimension \AGSNote{cite}. Numerous MC and QMC methods have been developed to adaptively sample the random variable and then provide bounds on the true expectation that hold either with high probability or even probability 1. 
 
-This work extends some existing QMC methods to adaptively approximate a function of multiple integrands to within a user-specified error tolerance. Our extension leverages shared samples, custom error bound propagation, multi-dimensional vectorization, and parallel function evaluation. The resulting routines are implemented into the QMCPy Python package \cite{QMCPy} which is distributed on both GitHub and PyPI. 
+This work extends a number of existing MC and QMC methods to adaptively approximate a function of multiple expectations to within a user-specified error tolerance. Our extension incorporates shared samples, custom error bound propagation, multidimensional vectorization, and parallel function evaluation. The resulting routines are implemented into the QMCPy Python package \cite{QMCPy} which is distributed on both GitHub and PyPI. 
 
 \section{Monte Carlo Methods}
 
-Monte Carlo methods are well-suited to approximate the expected value a random variable. Suppose we would like to approximate the vector mean $\bmu = \bbE[f(X)] \in \bbR^\rho$ where $X\sim\calU(0,1)^d$ and  $f: [0,1]^d \to \bbR^\rho$ is a vectorized objective function such that $f(\cdot)=(f_1(\cdot),\dots,f_\rho(\cdot))$.  Crude Monte Carlo computes the approximation 
-\begin{equation}
+Monte Carlo methods are well-suited to approximate the expected value a random variable. Suppose we would like to approximate the vector mean $\bmu = \bbE[\bf(\bX)] \in \bbR^{d_{\bmu}}$ where $\bX\sim\calU(0,1)^{d_\bX}$ and  $\bf: [0,1]^{d_{\bX}} \to \bbR^{d_{\bmu}}$ is a vectorized objective function. Monte Carlo methods compute the approximation 
+\begin{equation*}
     \label{eq:mcapprox}
-    \hat{\bmu} = \frac{1}{n}\sum_{i=1}^n f(\bx_i) \approx \int_{[0,1]^d}f(\bx)\D\bx = \bmu
-\end{equation}
-using $\bx_1,\dots,\bx_n \in [0,1]^d$. While the standard uniform choice for $X$ may seem restrictive, a variety of distributions are compatible in this framework after an appropriate variable transformation, see \cite{QMCSoftware} for details.
+    \hat{\bmu} = \frac{1}{n}\sum_{i=1}^n \bf(\bx_i) \approx \int_{[0,1]^{d_{\bX}}}\bf(\bx)\D\bx = \bbE[\bf(\bX)] = \bmu
+\end{equation*}
+using $\bx_1,\dots,\bx_n \in [0,1]^{d_\bX}$. While the standard uniform choice for $\bX$ may seem restrictive, a variety of random variables are compatible in this framework after an appropriate variable transformation. For example, if we are interested in computing $\mu = \bbE[g(\bT)]$ for some $g: \bbR^{d_{\bX}} \to \bbR$ where $\bT \sim \calN(\boldsymbol{m},\boldsymbol{\Sigma})$, then $\mu = \bbE[f(\bX)]$ where $f(\bX)=g(\boldsymbol{A}\Phi^{-1}(\bX)+\boldsymbol{m})$, $\boldsymbol{\Sigma}=\boldsymbol{A}\boldsymbol{A}^T$, and $\Phi^{-1}$ is the inverse CDF of a standard normal distribution acting element wise. More details on variable transformations can be found in \cite{QMCSoftware} along with examples in the QMCPy framework.
 
-Crude Monte Carlo methods choose sampling nodes to be independent and identically distributed (IID). That is, $\bx_1,\dots,\bx_n \simiid \calU[0,1]^d$.
-The error in approximating $\bmu$ by $\hat{\bmu}$ based on IID nodes is  $\calO(n^{-1/2})$. 
+Crude Monte Carlo methods choose sampling nodes to be independent and identically distributed (IID). That is, $\bx_1,\dots,\bx_n \simiid \calU[0,1]^{d_\bX}$.
+The elementwise error in approximating $\bmu$ by $\hat{\bmu}$ using IID nodes is  $\calO(n^{-1/2})$. 
 
-Quasi-Monte Carlo (QMC) methods choose sampling nodes in a carefully coordinated manner to avoid the gaps and clusters observed in IID nodes.  Discrepancy measures quantify how closely the discrete distribution of such points matches a target distribution. QMC nodes have low discrepancy (LD) with the standard uniform distribution compared to IID nodes. Popular LD node sets include the Halton points, digital nets, and integration lattices \AGSNote{cite}. The error in approximating $\bmu$ by $\hat{\bmu}$ based on LD nodes is  $\calO(n^{-1+\delta})$ where $0 < \delta \ll 1/2$. This convergence rate for QMC methods is significantly faster than the rate for crude Monte Carlo when $f(X)$ has low effective dimension, see \AGSNote{cite}. 
+Quasi-Monte Carlo (QMC) methods choose sampling nodes in a carefully coordinated, dependent manner to avoid the gaps and clusters observed in IID nodes.  Discrepancy measures quantify how close the discrete distribution of such points is to the standard uniform distribution. The discrete distribution of QMC nodes have low discrepancy (LD) with the standard uniform distribution compared to IID nodes. Popular LD node sets include Halton points, digital nets, and integration lattices. The elementwise error in approximating $\bmu$ by $\hat{\bmu}$ with LD nodes is  $\calO(n^{-1+\delta})$ for any $\delta > 0$ following from the Koksma-Hlawka inequality \AGSNote{cite}. This convergence rate for QMC methods is significantly faster than the rate for crude Monte Carlo when $\bf(\bX)$ has low effective dimension, see \AGSNote{cite}. 
 
-The QMC methods in this article rely on LD sequences that are extensible in both dimension and number of samples. This enables our algorithms to utilize shared point sets and adaptively increase the number of points used to estimate $\hat{\bmu}$ without needing to discard previous observations. For more on extensible LD sequence see \AGSNote{cite}. Such LD sequences are often implemented in base 2 for computational efficiently and therefore prefer sampling at the first $2^m$ nodes in the sequence to attain low discrepancy measures. Thus, existing QMC algorithms tend to iteratively  double the sample size until the error bounds on $\bmu$ are sufficiently tight. 
+The QMC methods in this article rely on LD sequences that are extensible in both dimension and number of samples. This enables our algorithms to utilize shared point sets and adaptively increase the number of points used to estimate $\hat{\bmu}$ without needing to discard previous observations. For more on extensible LD sequence see \AGSNote{cite}. Many LD sequences are implemented in base $2$ for computational efficiently and therefore prefer sampling the first $2^m$ nodes in the sequence to attain low discrepancy metrics. Thus, existing QMC algorithms will iteratively double the sample size until the error bounds on $\bmu$ are sufficiently tight. Algorithm \ref{algo:Gen.Lattice} details generating independent randomizations of a lattice sequence. 
 
-The remainder of this article focuses on extending the functionality of existing QMC methods. Crude Monte Carlo methods may be extended in a similar way to accommodate integrands with higher effective dimension. We defer this task to future development.  For a more carefully treatment of crude Monte Carlo and Quasi-Monte Carlo see \cite{mcbook}. 
+\begin{algorithm}[h!]
+    \caption{$\texttt{Gen.Lattice}(R,n)$}
+    \label{algo:Gen.Lattice}
+    \begin{algorithmic}
+    \Require $R \in \bbN$, the number of replications.
+    \Require $n = 2^m \in \bbN$, the number of nodes in the lattice sequence.
+    \\ \hrulefill
+    \State fix $\bv \in \bbN^{d_{\bX}}$, a carefully chosen Lattice generating vector, see \AGSNote{cite} for details. 
+    \For{$i \gets 0,\dots,n-1$}
+        \State $t \gets \sum_{k=1}^m 2^{-k}i_k$ where $i = \sum_{k=1}^m 2^{k-1} i_k$ 
+        \State $\bx_i \gets (t\bv) \mod \boldsymbol{1}$
+    \EndFor
+    \State $\boldsymbol{\Delta} \gets \texttt{RandomUniform01}(R,d_{\bX})$ \Comment{get an $R \times d_{\bX}$ matrix of IID standard uniform samples in $[0,1]$}
+    \For{$r \gets 1,\dots, R$}
+        \State $x_{ij}^{(r)} \gets (x_{ij}+\Delta_{rj}) \mod 1$ for $i=1,\dots,n$ and $j=1,\dots d_{\bX}$
+    \EndFor
+    \State \Return $\{\{\bx_i^{(r)}\}_{i=1}^n\}_{r=1}^R$
+    \end{algorithmic}
+\end{algorithm}
+    
+The remainder of this article focuses on extending the functionality of existing MC and QMC methods. For a more carefully treatment of crude Monte Carlo and Quasi-Monte Carlo see \cite{mcbook}. 
 
 \section{Monte Carlo Approximation Error}\label{sec:Existing_QMC_Methods}
 
-In this section we assume $f$ is a scalar function and discuss existing Monte Carlo methods for approximating error bounds on a single mean $\mu$. Specifically, given $n$ samples $\bx_1,\dots,\bx_n$ and  corresponding function evaluations $f(\bx_1),\dots,f(\bx_n)$ we discuss methods for estimating lower bound $\mu^-$ and upper bound $\mu^+$ so that $\mu \in [\mu^-,\mu^+]$ either guaranteed or with high probability. 
-
-The following error estimation techniques are implemented, among others, into the open source QMC library QMCPy. Table \ref{table:qmcpy_sc} tabulates algorithm features discussed next.
+In this section we assume $f$ is a scalar function, that is $d_{\bmu}=1$, and discuss existing Monte Carlo methods for approximating error bounds on the single mean $\mu$. Specifically, given $n$ samples $\bx_1,\dots,\bx_n$ and  corresponding function evaluations $f(\bx_1),\dots,f(\bx_n)$ we discuss methods for estimating lower bound $\mu^-$ and upper bound $\mu^+$ so that $\mu \in [\mu^-,\mu^+]$ with probability $1-\alpha^{(\mu)}$. Table \ref{table:qmcpy_sc} compares the Monte Carlo methods discussed in the remainder of this section.
 
 \begin{table}[H]
-\begin{tabular}{r c c c}
-    QMCPy Class & Guaranteed Error Estimation & Compatible Points\\
+\begin{tabular}{r c c c c c c}
+    QMCPy Class Name & MC Type & Sequences & Replications ($R$) & Error Bounds & Vectorized \\
     \hline
-    \texttt{CubMCCLT} \AGSNote{cite} & & \texttt{IID} \\
-    \texttt{CubMCG} \cite{cubmcg} & X & \texttt{IID} \\
-    \texttt{CubQMCCLT} \AGSNote{cite} & & \texttt{LD} \\
-    \texttt{CubQMC\{Net,Lattice\}G} \cite{cubqmcsobol,cubqmclattice} & X & \texttt{DigitalNetB2}, \texttt{Lattice} \\
-    \texttt{CubQMCBayes\{Net,Lattice\}G} \AGSNote{cite} \cite{cubqmcbayeslattice} & X &  \texttt{DigitalNetB2}, \texttt{Lattice} \\
+    \texttt{CubMCCLT} \AGSNote{cite} & CMC & \texttt{IID} & $1$ & Probabilistic & \\
+    \texttt{CubMCG} \cite{cubmcg} & CMC & \texttt{IID} & $1$ & Probabilistic & \\
+    \texttt{CubQMCRep} \cite{mcbook} & QMC & \texttt{LD} & $> 1$ & Probabilistic & \checkmark \\
+    \texttt{CubQMCNetG} \cite{cubqmcsobol} & QMC & \texttt{DigitalNetB2} & $1$ & Guaranteed & \checkmark \\
+    \texttt{CubQMCLatticeG} \cite{cubqmclattice} & QMC & \texttt{Lattice} & $1$ & Guaranteed & \checkmark \\
+    \texttt{CubQMCBayesNetG} \AGSNote{cite} & QMC &  \texttt{DigitalNetB2} & $1$ & Probabilistic & \checkmark \\
+    \texttt{CubQMCBayesLatticeG} \cite{cubqmcbayeslattice} & QMC & \texttt{Lattice} & $1$ & Probabilistic & \checkmark \\
     \hline
 \end{tabular}
-\caption{A comparison of select Monte Carlo and Quasi-Monte Carlo stopping criterion algorithms available in QMCPy.}
+\caption{A comparison of select Monte Carlo and Quasi-Monte Carlo stopping criterion algorithms available in QMCPy. \emph{MC Type} indicates wheather an algorithm is Crude Monte Carlo (CMC) or Quasi-Monte Carlo (QMC). \emph{Sequences} indicate classes of compatible sequences. For example, \texttt{CubQMCRep} is compatible with any low discrepancy (\texttt{LD}) sequence including base 2 digital nets (\texttt{DigitalNetB2}) and integration lattices (\texttt{Lattice}). However, \texttt{CubQMCNetG} is only compatible with \texttt{DigitalNetB2} sequences and will not work with \texttt{Lattice} or other LD sequences. \emph{Replications ($R$)} specifies the number of IID randomizations of a sequence required by the stopping criterion. CMC algorithms require $R=1$ since the points are already IID. Some QMC and multilevel Monte Carlo algorithms require $R > 1$. \emph{Error Bounds} specify whether the algorithm provides probabilistic error bounds which hold with probability $1-\alpha^{(\mu)}$ for some desired $\alpha^{(\bmu)}<1$ or guaranteed error bounds which hold with probability $1$, i.e. $\alpha^{(\mu)}=0$, for some nicely behaved set of functions. \emph{Vectorized} stopping criterion have implemented the framework in this article.}
 \label{table:qmcpy_sc}
 \end{table}
 
-\texttt{CubMCCLT: } When $\bx_1,\dots,\bx_n$ are IID and $f$ has finite variance, the Central Limit Theorem provides a $100(1-\alpha)\%$ confidence interval for $\mu$ by setting $\mu^\pm = \hat{\mu} \pm Z^{1-\alpha/2}\sigma/\sqrt{n}$. Here $\sigma$ is the standard deviation of $f(X)$, which is generally unknown, $Z^{1-\alpha/2}$ is the inverse CDF of the standard normal distribution at $1-\alpha/2$, and $\hat{\mu}$ is the sample average of function evaluations as in \eqref{eq:mcapprox}. Often $\sigma$ is approximated by the unbiased estimator $S = \sqrt{1/(n-1)\sum_{i=1}^n(f(\bx_i)-\hat{\mu})^2}$, perhaps multiplied by an inflation factor $C>1$ for a more conservative approximation. The tractable error bounds on $\mu$ are then
+\begin{description}
+    \item[\texttt{CubMCCLT}] When $\bx_1,\dots,\bx_n$ are IID and $f$ has finite variance, the Central Limit Theorem provides a $1-\alpha^{(\mu)}$ confidence interval for $\mu$ by setting $\mu^\pm = \hat{\mu} \pm Z^{1-\alpha^{(\mu)}/2}\sigma/\sqrt{n}$. Here $\sigma$ is the standard deviation of $f(\bX)$, which is generally unknown, $Z^{1-\alpha^{(\mu)}/2}$ is the inverse CDF of a standard normal distribution at $1-\alpha^{(\mu)}/2$, and $\hat{\mu}$ is the sample average of function evaluations as in \eqref{eq:mcapprox}. $\sigma$ may be approximated by the unbiased estimator $S = \sqrt{1/(n-1)\sum_{i=1}^n(f(\bx_i)-\hat{\mu})^2}$, perhaps multiplied by an inflation factor $C>1$ for a more conservative estimate. The tractable $1-\alpha^{(\mu)}$ error bounds on $\mu$ are
+    \begin{equation*}
+        \mu^\pm = \hat{\mu} \pm \frac{CZ^{1-\alpha^{(\mu)}/2}S}{\sqrt{n}}
+        \label{eq:clt_mu_bounds}.
+    \end{equation*}
+    \item[\texttt{CubMCG}] The Central Limit Theorem produces probabilistic bounds on $\mu$ which rely on the sample size approaching infinity and the unverifiable assumption that $\sigma \leq CS$. If $f(\bX)$ has a known upper bound on the kurtosis $\kappa = \bbE[(f(\bX)-\mu)^4]/\sigma^4-3$, then   \cite{cubmcg} provides bounds $[\mu^-,\mu^+]$ on $\mu$ with guaranteed $1-\alpha^{(\mu)}$ confidence based on IID nodes and the Berry-Esseen inequality.
+    \item[\texttt{CubQMCRep}] Finding QMC bounds for $\mu$ tends to be more difficult due to the deterministic nature of LD sequences. One idea is to produce $R$ IID randomizations of a LD sequence which preserve low discrepancy and then use bounds based on the $R$ IID sample averages. This method is detailed in Algorithm \ref{algo:MCBounds.CubQMCRep} below with a more careful treatment available in either \cite[Chapter 17]{mcbook} or \cite{qmc4pde_preprint}. \begin{algorithm}[h!]
+        \caption{$\texttt{MCBounds.CubQMCRep}\left(\{\{\bx_i^{(r)}\}_{i=1}^n\}_{r=1}^R, \{\{y_i^{(r)}\}_{i=1}^n\}_{r=1}^R, \alpha^{(\mu)}\right)$}
+        \label{algo:MCBounds.CubQMCRep}
+        \begin{algorithmic}
+        \Require $\{\{\bx_i^{(r)}\}_{i=1}^{2^m}\}_{r=1}^R \in (0,1)^{R \times n \times d_{\bX}}$, $R$ IID randomizations of a size $n$ LD point set in $d_{\bX}$ dimensions.
+        \Require $\{\{y_i^{(r)}\}_{i=1}^n\}_{r=1}^R \in \bbR^{R \times n}$, evaluations of $\bf$ at $\{\{\bx_i^{(r)}\}_{i=1}^{2^m}\}_{r=1}^R$.
+        \Require $\alpha^{(\bmu)} \in (0,1)$, desired uncertainty level for error bounds on $\mu$. \\
+        \hrulefill
+        \State $\hat{\mu}_r \gets \frac{1}{n} \sum_{i=1}^n y_i^{(r)}$ for $r=1,\dots,R$
+        \State $\hat{\mu} \gets \frac{1}{R} \sum_{r=1}^R \hat{\mu}_r$
+        \State $S_R \gets \sqrt{\frac{1}{R-1}\sum_{i=1}^R(\hat{\mu}_r - \hat{\mu})^2}$
+        \State set $T_{R-1}^{1-\alpha^{(\mu)}/2}$, the inverse CDF of Student's-t distribution with $R-1$ degrees of freedom at $1-\alpha^{(\mu)}/2$
+        \State $\mu^\pm \gets \hat{\mu} \pm T_{R-1}^{1-\alpha^{(\mu)}/2}S_R/\sqrt{R}$
+        \State \Return $\mu^-,\mu^+$
+        \end{algorithmic}
+    \end{algorithm}
+    \item[\texttt{CubQMC\{Net,Lattice\}G}] While \texttt{CubQMCRep} provides intuitive, practical bounds, this approximation requires $Rn$ function evaluations which may be prohibitively large. \citeauthor{cubqmclattice} overcome this challenges by developing algorithms in \cite{adaptive_qmc} that track the decay of Fourier coefficients based on a single randomized LD sequence i.e. $R=1$. These algorithms provide error bounds on $\mu$ that hold with probability $1$ for functions lying within a cone parameterized by the decay rate of the Walsh coefficients for digital sequences \cite{cubqmcsobol} or the complex exponential Fourier coefficients for integration lattices \cite{cubqmclattice}. In particular for \texttt{CubQMCLatticeG}, the cone comprises of functions whose Fourier series are absolutely convergent and whose true Fourier coefficients decay steadily as the wave-number tends to infinity.
+    \item[\texttt{CubQMCBayes\{Net,Lattice\}G}] Another pair of QMC algorithms with $R=1$ take a Bayesian approach to error estimation. Rather than assume the function lies within a cone, these algorithms assume the integrand is an instance of a Gaussian process. 
+    %Alternatively, rather than assume the integrand is deterministic, these methods assume the integrand is an instance of a random Gaussian process.  
+    Utilizing special kernels matched to LD sequences allows fast approximation of Gaussian process hyperparameters and provides tractable error estimation. These Bayesian QMC algorithms are also available for both digital nets \AGSNote{cite} and integration lattices  \cite{cubqmcbayeslattice}. 
+    %Similar to \texttt{CubQMC\{Net,Lattice\}G}, Fourier and Walsh transform coefficients are used respectively with Lattice and digital nets. But the coefficients are used to estimate credible intervals. Thus it provides much stronger theoretical background. These algorithms need to estimate shape and scale parameters to parameterize the covariance kernels, which are to be searched using optimization techniques, leading to greater computational cost. 
+\end{description}
+
+We recommend using the  \texttt{CubQMC\{Net,Lattice\}G} QMC algorithms if the function's Fourier coefficients are expected to be well behaved and the function has low evaluation cost. For functions with low dimension and larger evaluation cost, we recommend using  \texttt{CubQMCBayes\{Net,Lattice\}G}. While these algorithms require overhead for Gaussian Process hyperparameter optimization, they tend to be more sample efficient than \texttt{CubQMC\{Net,Lattice\}G}. \texttt{CubQMCRep} accommodates a larger class of functions compared to other QMC algorithms at the cost of requiring significantly more samples to compute replicated estimates. 
+
+Digital nets may be preferred over lattice point sets as the later often requires the function be periodic. While periodizing transforms are available for all functions, such transforms may destroy smoothness properties previously enjoyed by the function. See \AGSNote{cite} for more details on periodizing transforms. 
+
+If QMC algorithms are not applicable, we recommend using \texttt{CubMCG} over \texttt{CubMCCLT}. The former provides error bounds with guaranteed confidence while the later provides heuristic error bounds that are unverifiable due to the finite sample size. 
+
+%The Bayesian cubature algorithms are not recommended where the integrand's Fourier coefficients are not expected to be well behaved. Also not recommended for very dimensional integrands for which the parameters search will be computationally prohibitive. One advantage of using the digital-net cubature is the integrand does not have to be periodic in the unit cube $[0, 1)^d$ whereas the lattice based cubature algorithm expects the integrand to be periodic. 
+
+% \paragraph{Computational cost of \texttt{CubQMCBayes\{Net,Lattice\}G }:}
+% The Bayesian cubature requires a computational cost of
+% \begin{equation} \label{eqn:OuralgoCost}
+%     \mathcal{O}\bigl(n \$(f) + N_{\opt}[n\$(C) + n \log(n)] \bigr),
+% \end{equation} 
+% where $\$(f)$ is the cost of one integrand value, $\$(C)$ is the cost of a single covariance kernel value,  $\Order(n \log(n))$ is the cost of a fast Fourier transform, and $N_{\opt}$ is an upper bound on the number of optimization steps required to choose the hyperparameters. If function evaluation is expensive, e.g., the output of a computationally intensive simulation, or if $\$(f) = \Order(d)$ for large $d$, then $\$(f)$ might be similar in magnitude to $N_{\opt} \log(n)$ in practice.  Typically, $\$(C) = \Order(d)$.  Note that the $\Order(n \log(n))$ contribution is $d$ independent.
+
+\section{Single Combined Solution Approximation and Bounds}
+
+The MC and QMC algorithms in the previous section may be vectorized in a straightforward manner to attain error bounds $[\bmu^-,\bmu^+]$ on a vector of individual solutions $\bmu$ so that 
 \begin{equation}
-    \mu^\pm = \hat{\mu} \pm \frac{CZ^{1-\alpha/2}S}{\sqrt{n}}
-    \label{eq:clt_mu_bounds}.
+    P(\mu_k \in [\mu_k^-,\mu_k^+]) \geq 1-\alpha_k^{(\bmu)},  \qquad k=1,\dots,d_{\bmu}.
+    \label{eq:indv_prob_bounds}
 \end{equation}
+This section is concerned with optimally approximating and bounding a scalar combined solution $s=C(\bmu)$ where $C: \bbR^{d_{\bmu}} \to \bbR$. 
 
-\texttt{CubMCG: } The Central Limit Theorem produces probabilistic bounds on $\mu$ which relies on the sample size approaching infinity and the unverifiable assumption that $\sigma \leq CS$. If $f(X)$ has a known upper bound on the kurtosis $\kappa = \bbE[(f(X)-\mu)^4]/\sigma^4-3$, then   \cite{cubmcg} provides a guaranteed fixed width confidence interval $[\mu^-,\mu^+]$ for $\mu$ based on IID nodes and the Berry-Esseen Inequality.
-
-\texttt{CubQMCCLT: } Finding QMC bounds for $\mu$ tends to be more difficult due to the deterministic nature of LD sequences. One idea is to produce $R$ IID randomizations of a LD sequence which preserve low discrepancy and then use bounds based on the $R$ IID sample averages. Specifically, let $\bx_{1,r},\dots,\bx_{n,r}$ be an IID randomization of a deterministic LD point set and let $\hat{\mu}_r = 1/n \sum_{i=1}^n f(\bx_{i,r})$ for $r=1,\dots,R$. Then using the pooled mean estimate $\hat{\mu} = 1/R \sum_{r=1}^R \hat{\mu}_r$ we may approximate $100(1-\alpha/2)\%$ confidence bounds on $\mu$ to be
-\begin{equation}
-    \mu^\pm = \hat{\mu} \pm t_{R-1}^{1-\alpha/2}S_r
-    \label{eq:qmc_clt_mu_bounds}
-\end{equation}
-where $S_r = \sqrt{R^{-1}(R-1)^{-1}\sum_{i=1}^R(\hat{\mu}_r - \hat{\mu})^2}$ and $t_{R-1}^{1-\alpha/2}$ is the inverse CDF of the student T distribution with $R-1$ degrees of freedom. More information on this method can be found in \cite[Chapter 17]{mcbook} or \cite{qmc4pde_preprint}.
-
-\texttt{CubQMC\{Net,Lattice\}G: }While \eqref{eq:qmc_clt_mu_bounds} provides intuitive, practical bounds, this approximation requires $Rn$ function evaluations which may be prohibitively large.  \citeauthor{cubqmclattice} overcome this challenges by developing algorithms that track the decay of Fourier coefficients based on a single randomized LD sequence ($R=1$) \cite{adaptive_qmc}. These algorithms provide guaranteed error bounds on $\bmu$ for functions lying within an appropriately parameterized cone by tracking the decay of either the Walsh coefficients for digital sequences \cite{cubqmcsobol} or the complex exponential Fourier coefficients for integration lattices \cite{cubqmclattice}. In particular for \texttt{CubQMCLatticeG}, the cone comprises of functions whose Fourier series are absolutely convergent and whose true Fourier coefficients, decay steadily as wave-number tends to infinity.
-
-%%
-%% TODO: Compare cubQMCBayes against cubQMC algorithms
-%% For What kind of integrands, Bayes algos work better
-
-\texttt{CubQMCBayes\{Net,Lattice\}G: } Another pair of QMC algorithms take a Bayesian approach to error estimation. Rather than assume the function lies within a cone, these algorithms assume the integrand is an instance of a Gaussian process. Alternatively rather than assume the integrands are deterministic, here assumes as an instance of a random Gaussian process.  Utilizing special kernels matched to LD sequences allows fast approximation of Gaussian process hyperparameters and provides guaranteed error estimation. These Bayesian QMC algorithms are also available for both digital nets \AGSNote{cite} and integration lattices  \cite{cubqmcbayeslattice}. Similar to \texttt{CubQMC\{Net,Lattice\}G}, Fourier and Walsh transform coefficients are used, respectively with Lattice and digital nets. But the coefficients are used to estimate credible intervals. Thus it provides much stronger theoretical background. These algorithms need to estimate shape and scale parameters to parameterize the covariance kernels, which are to be searched using optimization techniques, leading to much more computational cost. 
-
-The Bayesian cubature algorithms are not recommended where the integrand's Fourier coefficients are not expected to be well behaved. Also not recommended for very dimensional integrands for which the parameters search will be computationally prohibitive.
-One advantage of using the digital-net cubature is the integrand does not have to be periodic in the unit cube $[0, 1)^d$ whereas the lattice based cubature algorithm expects the integrand to be periodic. 
-
-\section{Optimal Approximation of a Combined Solution}
-
-Given an appropriate set of  samples and their corresponding function evaluations, the QMC stopping criterion discussed in the previous section are easily vectorized to produce bounds on the individual means $\bmu \in \bbR^\rho$ such that $\bmu \in [\bmu^-,\bmu^+]$ either guaranteed or with high probability. We are interested in approximating a combined solution $s \in \bbR$ which is a function of individual means $\bmu$.  The next section generalizes the solution $s$ from a scalar to a to multi-dimensional array with special attention to enable economical computation.
-
-In order to approximate $s$, the user is required to define functions $C^-,C^+: \bbR^\rho \times \bbR^\rho \to \bbR$ which combine individual bounds $\bmu^-,\bmu^+$ into a combined bounds $s^-,s^+$ respectively so that $s \in [s^-,s^+]$ with the same guarantee or high likelihood. For example, if we are interested in approximating the product of two expectations $s=\mu_1\mu_2$, then we may set
+First, we  must decide how to set $\balpha^{(\bmu)}$ so that if \eqref{eq:indv_prob_bounds} holds then $P(\bmu \in [\bmu^-,\bmu^+]) \geq 1-\alpha^{(s)}$ where $\alpha^{(s)}$ is the user specified uncertainty threshold on the combined solution. To do so, we let $\alpha_k^{(\bmu)} = \alpha^{(s)}/d_{\bmu}$ so that the Bonferroni, Boole inequalities give us 
 \begin{align*}
-    s^- &= C^-(\bmu^-,\bmu^+) = \min_{\mu \in [\bmu^-,\bmu^+]} \mu_1\mu_2 = \min(\mu_1^-\mu_2^-,\mu_1^-\mu_2^+,\mu_1^+\mu_2^-,\mu_1^+\mu_2^+), \\
-    s^+ &= C^+(\bmu^-,\bmu^+) = \max_{\mu \in [\bmu^-,\bmu^+]} \mu_1\mu_2 = \max(\mu_1^-\mu_2^-,\mu_1^-\mu_2^+,\mu_1^+\mu_2^-,\mu_1^+\mu_2^+).
+    P(\bmu \in [\bmu^-,\bmu^+])
+    &= P\left(\cap_{k=1}^{d_{\bmu}} \{\mu_k \in [\mu^-_k,\mu^+_k]\}\right) \\
+    &= 1-P\left(\cup_{k=1}^{d_{\bmu}} \{\mu_k \notin [\mu^-_k,\mu^+_k]\}\right) \\
+    &\geq 1-\sum_{k=1}^{d_{\bmu}} P(\mu_k \notin [\mu_k^-,\mu_k^+]) \\
+    &\geq 1-\sum_{k=1}^{d_{\bmu}} \alpha_k^{(\bmu)} \\
+    &= 1-\alpha^{(s)}
 \end{align*}
-If $s^-=-\infty$ or $s^+=\infty$, then we automatically determine the error criterion has not been met and proceed with subsequent sampling. This situation arises, for example, when computing the ratio of integrals and the bounds on the denominator include 0. Going forward, we assume $s^-,s^+$ are finite. 
+as desired. 
 
-We now wish to derive an optimal solution approximation $\hat{s}$ with respect to some error threshold $\varepsilon$ and  error metric $h(s,\varepsilon)$. Here we assume $h(\cdot,\varepsilon)$ is a metric map, so for any $s,\tilde{s} \in \bbR$ we have $\lvert h(s,\varepsilon) - h(\tilde{s},\varepsilon) \rvert \leq \lvert s - \tilde{s} \rvert$. Error metric options include
+Next, we require the user define bound propagation functions $C^-,C^+: \bbR^{d_{\bmu}} \times \bbR^{d_{\bmu}} \to \bbR$ which combine individual bounds $[\bmu^-,\bmu^+]$ into combined bounds $[s^-,s^+] = [C^-(\bmu^-,\bmu),C^+(\bmu^-,\bmu^+)]$ so that 
+$$P(\bmu \in [\bmu^-,\bmu^+]) \geq 1-\alpha^{(s)} \qquad\text{implies}\qquad  P(s \in [s^-,s^+]) \geq 1-\alpha^{(s)}.$$ This is achieved by setting
+\begin{equation*}
+    s^- = C^-(\bmu^-,\bmu^+) = \min_{\bmu \in [\bmu^-,\bmu^+]} C(\bmu) \qquad\text{and}\qquad s^+ = C^+(\bmu^-,\bmu^+) = \max_{\bmu \in [\bmu^-,\bmu^+]} C(\bmu).
+\end{equation*}
+Table \ref{table:elementary_ops_Cpm} provides examples of functions $C^-,C^+$ for elementary operations on individual solutions. More details on interval arithmetic can be found in \cite{interval_analysis}.
+ 
+\begin{table}[H]
+\begin{tabular}{r  c  c}
+    $s=C(\bmu)$ & $s^- = C^-(\bmu^-,\bmu^+)$ & $s^+ = C^+(\bmu^-,\bmu^+)$ \\
+    \hline
+    $\mu_1+\mu_2$ & $\mu_1^-+\mu_2^-$ & $\mu_1^++\mu_2^+$ \\
+    $\mu_1-\mu_2$ & $\mu_1^--\mu_2^+$ & $\mu_1^+-\mu_2^-$ \\
+    $\mu_1 \cdot \mu_2$ & $\min(\mu_1^-\mu_2^-,\mu_1^-\mu_2^+,\mu_1^+\mu_2^-,\mu_1^+\mu_2^+)$ & $\max(\mu_1^-\mu_2^-,\mu_1^-\mu_2^+,\mu_1^+\mu_2^-,\mu_1^+\mu_2^+)$ \\
+    $\mu_1 / \mu_2$ & $\begin{cases} -\infty, & 0 \in [\mu_2^-,\mu_2^+] \\ \min\left(\frac{\mu_1^-}{\mu_2^-},\frac{\mu_1^+}{\mu_2^-},\frac{\mu_1^-}{\mu_2^+},\frac{\mu_1^+}{\mu_2^+}\right), & 0 \notin [\mu_2^-,\mu_2^+] \end{cases}$ & $\begin{cases} \infty, & 0 \in [\mu_2^-,\mu_2^+] \\ \max\left(\frac{\mu_1^-}{\mu_2^-},\frac{\mu_1^+}{\mu_2^-},\frac{\mu_1^-}{\mu_2^+},\frac{\mu_1^+}{\mu_2^+}\right), & 0 \notin [\mu_2^-,\mu_2^+] \end{cases}$ \\
+    $\min(\mu_1,\mu_2)$ & $\min(\mu_1^-,\mu_2^-)$ & $\min(\mu_1^+,\mu_2^+)$ \\
+    $\max(\mu_1,\mu_2)$ & $\max(\mu_1^-,\mu_2^-)$ & $\max(\mu_1^+,\mu_2^+)$ \\
+    \hline
+\end{tabular}
+\caption{Bound propagation functions for elementary operations on individual solutions.}
+\label{table:elementary_ops_Cpm}
+\end{table}
+
+%If $s^-=-\infty$ or $s^+=\infty$, then we automatically determine that the error criterion has not been met and proceed to further sample the integrands. This situation arises, for example, when computing the ratio of integrals and the bounds on the denominator include 0. Going forward, we assume $s^-,s^+$ are finite. 
+
+We now wish to derive an optimal solution approximation $\hat{s}$ with respect to some error threshold $\varepsilon$ and  error metric $h_\varepsilon(s)$. Here we assume $h_\varepsilon(\cdot)$ is a metric map, meaning that
+$$\lvert h_\varepsilon(s_1) - h_\varepsilon(s_2) \rvert \leq \lvert s_1 - s_2 \rvert, \qquad \forall s_1,s_2 \in \bbR.$$
+Error metric options include
 \begin{subequations}
 \begin{align}
-    h(s,\varepsilon) & = \varepsilon \quad &&\text{absolute error satisfied}, \label{eq:h_abs}\\
-    h(s,\varepsilon) &= \max\left(\varepsabs,\lvert s \rvert \varepsrel \right) \quad &&\text{absolute or relative error satisfied, and } \label{eq:h_abs_or_rel} \\
-    h(s,\varepsilon) &= \min\left(\varepsabs,\lvert s \rvert \varepsrel \right) \quad &&\text{absolute and relative error satisfied.} \label{eq:h_abs_and_rel}
+    h_\varepsilon(s) &= \varepsabs \quad &&\text{absolute error satisfied}, \label{eq:h_abs} \\
+    h_\varepsilon(s) &= \varepsrel \quad &&\text{relative error satisfied}, \label{eq:h_rel} \\
+    h_\varepsilon(s) &= \max\left(\varepsabs,\lvert s \rvert \varepsrel \right) \quad &&\text{absolute or relative error satisfied}, \label{eq:h_abs_or_rel} \\
+    h_\varepsilon(s) &= \min\left(\varepsabs,\lvert s \rvert \varepsrel \right) \quad &&\text{absolute and relative error satisfied.} \label{eq:h_abs_and_rel}
 \end{align}
 \end{subequations}
 %Note that the optimal approximation $\hat{s}$ is not necessarily the midpoint of the combined solution bounds $s^-,s^+$.
-Define $g(s,\hat{s},\varepsilon)=\lvert s - \hat{s} \rvert -h(s,\varepsilon)$ and note that the error criterion is met if and only if 
+Define $g(s,\hat{s})=\lvert s - \hat{s} \rvert -h_\varepsilon(s)$ so that the error criterion is met if and only if 
+$$\max_{s \in [s^-,s^+]} g(s,\hat{s}) \leq 0.$$ For $s \in [s^-,s^+]$, if $s^- \leq s \leq \hat{s}$ then 
+$$g(s^-,\hat{s})-g(s,\hat{s}) = \lvert s^- - \hat{s} \rvert -h_\varepsilon(s^-) - \lvert s - \hat{s} \rvert  + h_\varepsilon(s) \geq s - s^- - \lvert h_\varepsilon(s)-h_\varepsilon(s^-) \rvert \geq 0,$$
+and if $\hat{s} \leq s \leq s^+$ then 
+$$g(s^+,\hat{s})-g(s,\hat{s}) = \lvert s^+ - \hat{s} \rvert -h_\varepsilon(s^+) - \lvert s - \hat{s} \rvert  + h_\varepsilon(s) \geq s^+ - s - \lvert h_\varepsilon(s)-h_\varepsilon(s^+) \rvert \geq 0.$$
+This means that $g(\cdot,\hat{s})$ attains its maximum at either $s^-$ or $s^+$ so that
 \begin{equation*}
-    \max_{s \in [s^-,s^+]} g(s,\hat{s},\varepsilon) \leq 0.
+    \max_{s \in [s^-,s^+]} g(s,\hat{s}) = \max_{s \in \{s^-,s^+\}} g(s,\hat{s}).
 \end{equation*}
-So for all $s \in [s^-,s^+]$ we have either
-\begin{align*}
-    g(s^-,\hat{s},\varepsilon)-g(s,\hat{s},\varepsilon) 
-    &= \lvert s^- - \hat{s} \rvert -h(s^-,\varepsilon) - \lvert s - \hat{s} \rvert  + h(s,\varepsilon) \\
-    &\geq s - s^- - \lvert h(s,\varepsilon)-h(s^-,\varepsilon) \rvert  %\JRComment{\text{is it supposed to be} \lvert s - s^- \rvert} % because $s >= s^-$
-    \\
-    &\geq 0 \qquad \text{if } s^- \leq s \leq \hat{s}, \text{ or} \\
-    g(s^+,\hat{s},\varepsilon)-g(s,\hat{s},\varepsilon) 
-    &= \lvert s^+ - \hat{s} \rvert -h(s^+,\varepsilon) - \lvert s - \hat{s} \rvert  + h(s,\varepsilon) \\
-    &\geq s^+ - s - \lvert h(s,\varepsilon)-h(s^+,\varepsilon) \rvert \\
-    &\geq 0 \qquad \text{if } \hat{s} \leq s \leq s^+.
-\end{align*}
-This means that $g(\cdot,\hat{s},\varepsilon)$ attains its maximum at either $s^-$ or $s^+$ so that
-\begin{equation*}
-    \max_{s \in [s^-,s^+]} g(s,\hat{s},\varepsilon) = \max g(s^\pm,\hat{s},\varepsilon) = \max\left(g(s^-,\hat{s},\varepsilon) \;,\; g(s^+,\hat{s},\varepsilon)\right).
-\end{equation*}
-The function $g(s^-,\cdot,\varepsilon)$ is monotonically decreasing for $\hat{s} < s^-$ and monotonically increasing for $\hat{s} > s^-$. Similarly, $g(s^+,\cdot,\varepsilon)$ is monotonically decreasing for $\hat{s} < s^+$ and monotonically increasing for $\hat{s} > s^+$. This means that the optimal choice of $\hat{s}$ to minimize $\max g(s^\pm,\hat{s},\varepsilon)$ lies in $[s^-,s^+]$ and satisfies
-\begin{align}
-    g(s^-,\hat{s},\varepsilon) &= g(s^+,\hat{s},\varepsilon) \nonumber \\
-    \therefore \quad \hat{s} - s^- - h(s^-,\varepsilon) &= s^+ - \hat{s} - h(s^+,\varepsilon) \nonumber \\ 
-    \therefore \quad \hat{s} &= \frac{1}{2}\left[ s^- + s^+ +h(s^-,\varepsilon) - h(s^+,\varepsilon) \right]. \label{eq:shat_opt}
-\end{align}
-
+The function $g(s^-,\cdot)$ is monotonically decreasing for $\hat{s} < s^-$ and monotonically increasing for $\hat{s} > s^-$. Similarly, $g(s^+,\cdot)$ is monotonically decreasing for $\hat{s} < s^+$ and monotonically increasing for $\hat{s} > s^+$. This means that the optimal choice of $\hat{s}$ to minimize $\max_{s \in \{s^-,s^+\}} g(s,\hat{s})$ lies in $[s^-,s^+]$ and satisfies $g(s^-,\hat{s}) = g(s^+,\hat{s})$ so that 
+$$\hat{s} - s^- - h_\varepsilon(s^-) = s^+ - \hat{s} - h_\varepsilon(s^+)$$
+and
+\begin{equation}
+    \hat{s} = \frac{1}{2}\left[ s^- + s^+ +h_\varepsilon(s^-) - h_\varepsilon(s^+) \right].
+    \label{eq:shat_opt}
+\end{equation}
 Under this optimal choice of $\hat{s}$, 
-\begin{equation*}
-    \label{eq:g_under_shat_opt}
-    2 \max g(s^\pm,\hat{s},\varepsilon) =  s^+  -  s^-  - h(s^-,\varepsilon) - h(s^+,\varepsilon).
-\end{equation*}
+$$2 \max_{s \in [s^-,s^+]} g(s,\hat{s}) =  s^+  -  s^-  - h_\varepsilon(s^-) - h_\varepsilon(s^+).$$
 Therefore, our error criterion is satisfied if and only if
 \begin{equation}
-    s^+-s^-<h(s^-,\varepsilon)+h(s^+,\varepsilon).
+    s^+-s^- \leq h_\varepsilon(s^-)+h_\varepsilon(s^+).
     \label{eq:sc}
 \end{equation}
 % If $s^- < 0 < s^+$, then \eqref{eq:h_abs_and_rel} cannot hold since $h(s,\varepsilon) \le \lvert s \rvert \varepsrel$, and so
@@ -242,47 +304,73 @@ Therefore, our error criterion is satisfied if and only if
 
 \section{Vectorized QMC Algorithm} \label{sec: Vectorized Implementation}
 
-In the previous section we assumed that individual solutions $\bmu \in \bbR^\rho$ were used to compute a single combined solution $s \in \bbR$. We now relax these assumptions to enable approximation of multi-dimensional combined solutions $\bs \in \bbR^{\bseta}$ from multi-dimensional individual solutions $\bmu \in \bbR^{\brho}$ via error thresholds $\bvarepsilon \in \bbR_+^{\bseta}$. Here the bold superscript is a vector of dimensions so that, for example, if $\bs$ is a $2 \times 3$ matrix then $\bseta = (2,3)$. The optimal approximation $\hat{\bs}$ may still be computed by \eqref{eq:shat_opt} where functions are assumed to be appropriately vectorized. Similarly, \eqref{eq:sc} may be used to compute Boolean flags $\bb \in \tfset^\eta$ where $b_{\bi}=\True$ if and only if the error criterion is satisfied for the combined solution at multi-index $\bi$. 
+In the previous section we assumed that a vector of individual solutions $\bmu \in \bbR^{d_{\bmu}}$ were used to compute a scalar combined solution $s \in \bbR$. We now relax these assumptions to enable approximation of multidimensional combined solutions $\bs \in \bbR^{\bd_{\bs}}$ from multidimensional individual solutions $\bmu \in \bbR^{\bd_{\bmu}}$ via combined uncertainty levels $\balpha^{(\bs)} \in (0,1)^{\bd_{\bs}}$, error metric $\bh_{\bvarepsilon}: \bbR^{\bd_{\bs}} \to \bbR^{\bd_{\bs}}$, combining function $\bC: \bbR^{\bd_{\bmu}} \to \bbR^{\bd_{\bs}}$, and bound propagation functions $\bC^-,\bC^+: \bbR^{\bd_{\bmu}} \times \bbR^{\bd_{\bmu}} \to \bbR^{\bd_{\bs}}$. Here the bold superscript is a vector of dimensions so that, for example, if $\bs$ is a $2 \times 3 \times 4$ array then $\bd_{\bs} = (2,3,4)$. The optimal approximation $\hat{\bs} \in \bbR^{\bd_{\bs}}$ may still be computed by \eqref{eq:shat_opt} where $h_\varepsilon$ is replaced by $\bh_\bvarepsilon$. With this same replacement, \eqref{eq:sc} may be used to compute Boolean flags $\bb^{(\bs)} \in \tfset^{\bd_{\bs}}$ where $b_{\bl}^{(\bs)}=\True$ if and only if the error criterion is satisfied for the combined solution at multi-index $\boldsymbol{1} \leq \bl \leq \bd_{\bs}$. 
 
-To be evaluation efficient, the user may define a dependency function $D: \tfset^{\bseta} \to \tfset^{\brho}$ which maps error criterion flags on the combined solutions to flags on individual solutions. In the next batch of samples, we pass $f$ the individual flags $\tilde{\bb} = D(\bb)$ so the integrand may avoid evaluating outputs at indices contributing to an already sufficiently approximated combined solution. In a simple example, if $\bmu=\bs$ then $D$ may be defined as the identity map. Then, when $\bs_{\bi}=\True$ at some iteration, $f$ need not evaluate index ${\bi}$ outputs in future evaluations. 
-
-Algorithm \ref{algo:qmcsc} details the typical QMC stopping criterion included in QMCPy. The cost of this algorithm is concentrated in evaluating $f$ at $2^m$ points with a cost we assume to be $\$(f)2^m$. In practice, this cost may be smaller if $f$ can take advantage of not having to produce all outputs for every iteration. The compute time may also be reduced through parallel evaluation of a function $f$ which is slow to evaluate. It should be noted that for functions which are quick to evaluate, the overhead of multi-processing parallelization may increase compute time.
+To be function-evaluation efficient, the user may define a dependency function $\bD: \tfset^{\bd_{\bs}} \to \tfset^{\bd_{\bmu}}$ which maps error criterion flags on the combined solutions to flags on individual solutions. In the next batch of samples, we pass $\bf$ the individual flags $\bD\left(\bb^{(\bs)}\right)$ so the integrand may avoid evaluating outputs at indices contributing to an already sufficiently approximated combined solution. In a simple example, if $\bs=\bmu$ then $\bC,\bD$ are the identity function. Then, when $b^{(\bs)}_{\bl}=\True$ at some iteration, $\bf$ need not evaluate index ${\bl}$ outputs in future evaluations. Moreover, $\bD$ may be used to determine individual uncertainty levels $\balpha^{(\bmu)}$ by determining which and how many individual solution contribute to a combined solution, see Algorithm \ref{algo:SetIndividualTolerances}.
 
 \begin{algorithm}[h!]
-    \caption{\ct{QMC Stopping Criterion} \\ Operations are understood to act elementwise.}
-    \label{algo:qmcsc}
+    \caption{$\texttt{SetIndividualTolerances}(\balpha^{(\bs)},\bD)$ \\ Operations are understood to act elementwise.}
+    \label{algo:SetIndividualTolerances}
     \begin{algorithmic}
-    \Require $f: [0,1]^{n \times d} \times \tfset^{\brho} \to \bbR^{n \times \brho}$, an integrand capable of being evaluated at sampling locations $X \in [0,1]^{n \times d}$ with individual flags $\tilde{\bb} \in \tfset^{\brho}$ to compute $n$ evaluations without computing outputs where $\tilde{b}_{\bi}=\True$.
-    \Require $m_0$, where $2^{m_0}$ is the initial number of samples.
-    \Require $\text{GenLD}: \bbN \times \bbN \to [0,1]^{n \times d}$, an appropriate generator of randomized LD samples taking in starting index $n_\text{start}$ and final index $n_\text{end}$ (not inclusive) and returns the $n = n_\text{end} - n_\text{start}$ samples in those positions of the sequence. 
-    \Require $C^-,C^+: \bbR^{\brho} \times \bbR^{\brho} \to \bbR^{\bseta}$, functions transforming bounds on the individual solutions into bounds on the combined solution
-    \Require $\bvarepsilon \in \bbR_+^{\bseta}$, a non-negative error tolerance. 
-    \Require $D: \tfset^{\bseta} \to \tfset^{\brho}$, a dependency function mapping stopping criterion flags for the combined solutions to flags for individual solutions. 
-    \Require $h: \bbR^{\bseta} \times \bbR^{\bseta}_+ \to \bbR^{\bseta}$, an error metric function, see for example \eqref{eq:h_abs}, \eqref{eq:h_abs_or_rel}, or \eqref{eq:h_abs_and_rel}
-    \Require $\text{UpdateIndividualBounds}: [0,1]^{n \times d} \times \bbR^{n \times \brho} \to \bbR^{\brho} \times \bbR^{\brho}$, a function computing $\bmu^-,\bmu^+$ from sampling locations $X \in [0,1]^{n \times d}$, function evaluations $\by \in \bbR^{n \times \brho}$, and data stored from previous calls. See Section \ref{sec:Existing_QMC_Methods} for examples. 
-    
+    \Require $\balpha^{(\bs)} \in (0,1)^{\bd_{\bs}}$, the desired uncertainty levels for combined solutions. 
+    \Require $\bD: \tfset^{\bd_{\bs}} \to \tfset^{\bd_{\bmu}}$, a dependency function mapping stopping criterion flags for the combined solutions to flags for individual solutions. \\
     \hrulefill
-    
+    \State $\balpha^{(\bmu)} \gets \boldsymbol{1}$
+    \For{$\bl=\boldsymbol{1},\dots,\bd_{\bs}$}
+        \State $b^{(\bs)}_{\tilde{\bl}} \gets \begin{cases} \True, & \tilde{\bl} \neq \bl \\ \False, & \tilde{\bl} = \bl \end{cases}, \qquad \tilde{\bl}=\boldsymbol{1},\dots,\bd_{\bs}$
+        \State $\bb^{(\bmu)} \gets \bD\left(\bb^{(\bs)}\right)$
+        \State $\tilde{d}_{\bmu} \gets \text{Count}\left(\bb^{(\bmu)}=\textbf{\False}\right)$
+        \State $\tilde{\alpha}_{\bk}^{(\bmu)} \gets \begin{cases} 1, & b^{(\bmu)}_{\bk} = \True \\ 1/\tilde{d}_{\bmu}, & b^{(\bmu)}_{\bk} = \False \end{cases}, \qquad \bk=\boldsymbol{1},\dots,\bd_{\bmu}$
+        \State $\balpha^{(\bmu)} = \min\left(\balpha^{(\bmu)},\tilde{\balpha}^{(\bmu)}\right)$
+    \EndFor
+    \State \Return $\balpha^{(\bmu)}$
+    \end{algorithmic}
+\end{algorithm}
+
+Algorithm \ref{algo:MCStoppingCriterion} outlines the vectorized MC and QMC stopping criterion included in QMCPy. Note that the implementation does not require specifying $\bC$ despite its use in deriving the necessary $\bC^-,\bC^+$ inputs. The cost of this algorithm is concentrated in evaluating $\bf$ at $2^m$ points with a cost we assume to be $\calO(\$(\bf)2^m)$. In practice, the run time may be shortened if $\bf$ can take advantage of not having to compute all outputs for every iteration. The run time may also be reduced through parallel evaluation of a function $\bf$ which is slow to evaluate. %It should be noted that for functions which are quick to evaluate, the overhead of multi-processing parallelization may increase compute time.
+
+\begin{algorithm}[h!]
+    \caption{$\texttt{MCStoppingCriterion}\left(\bf,m_0,\bC^-,\bC^+,\balpha^{(\bs)}, \bD, \bh_\bvarepsilon\right)$ \\ Operations are understood to act elementwise.}
+    \label{algo:MCStoppingCriterion}
+    \begin{algorithmic}
+    \Require $\bf: (0,1)^{n \times {d_{\bX}}} \to \bbR^{n \times \bd_{\bmu}}$, an integrand capable of being evaluated at sampling locations $\bx_1,\dots,\bx_n \in [0,1]^{d_{\bX}}$.
+    \Require $m_0$, where $2^{m_0}$ is the initial number of samples.
+    \Require $\bC^-,\bC^+: \bbR^{\bd_{\bmu}} \times \bbR^{\bd_{\bmu}} \to \bbR^{\bd_{\bs}}$, functions propagating bounds on the individual solutions into bounds on the combined solutions.
+    \Require $\balpha^{(\bs)} \in (0,1)^{\bd_{\bs}}$, the desired uncertainty levels for combined solutions.
+    \Require $\bD: \tfset^{\bd_{\bs}} \to \tfset^{\bd_{\bmu}}$, a dependency function mapping stopping criterion flags for the combined solutions to flags for individual solutions. 
+    \Require $\bh_{\bvarepsilon}: \bbR^{\bd_{\bs}} \to \bbR^{\bd_{\bs}}$, either \eqref{eq:h_abs}, \eqref{eq:h_rel}, \eqref{eq:h_abs_or_rel}, or \eqref{eq:h_abs_and_rel} applied element wise. 
+    \Require $\texttt{MCBounds}: (0,1)^{R \times n \times d_{\bX}} \times \bbR^{R \times n \times \bd_{\bmu}} \times (0,1)^{\bd_{\bmu}} \to \bbR^{\bd_{\bmu}} \times \bbR^{\bd_{\bmu}}$, e.g. a vectorized version of Algorithm \ref{algo:MCBounds.CubQMCRep}.
+    \Require $\texttt{Gen}: \bbN \times \bbN \to (0,1)^{R \times n \times d_{\bX}}$, e.g. Algorithm \ref{algo:Gen.Lattice}. 
+    \Require $R \in \bbN$, the number of replications.
+    \\ \hrulefill
+    \State Ensure $\texttt{MCBounds}$, $\texttt{Gen}$, and $R$ are compatible, see Table \ref{table:qmcpy_sc}
     \State $n_\text{start} \gets 0$
     \State $n_\text{end} \gets 2^{m_0}$
-    \State $\tilde{\bb} \gets \False^{\brho}$
-    \State $\bb \gets \False^{\bseta}$
-    \While{$\exists \bi$ where $\tilde{b}_i = \False$}
-        \State $X \gets \text{GenLD}(n_\text{start},n_\text{end})$
-        \State $\by \gets f(X,\tilde{\bb})$
-        \State $\bmu^+,\bmu^- \gets \text{UpdateIndividualBounds}(X,\by)$
-        \State $\bs^- = C^-(\bmu^-,\bmu^+)$
-        \State $\bs^+ = C^+(\bmu^-,\bmu^+)$
-        \State $\hat{\bs} \gets \frac{1}{2}\left[\bs^-+\bs^++h(\bs^-,\bvarepsilon)-h(\bs^+,\bvarepsilon)\right]$
-        \State $\bb \gets \text{Boolean}(\bs^+-\bs^- < h(\bs^-,\bvarepsilon)+h(\bs^+,\bvarepsilon))$
-        \State $\tilde{\bb} \gets D(\bb)$
+    \State $\bb^{(\bmu)} \gets \False^{\bd_{\bmu}}$
+    \State $\bb^{(\bs)} \gets \False^{\bd_{\bs}}$
+    \State $\balpha^{(\bmu)} \gets \texttt{SetIndividualTolerances}(\balpha^{(\bs)},\bD)$ \Comment{Algorithm \ref{algo:SetIndividualTolerances}}
+    \While{$b_{\bl} = \False$ for some $\bl$}
+        \State $\{\{\bx_i^{(r)}\}_{i=1}^{n_\text{end}}\}_{r=1}^R \gets \texttt{Gen}(R,n_\text{end})$ \\ \Comment{may take advantage of $\{\{\bx_i^{(r)}\}_{i=1}^{n_\text{start}}\}_{r=1}^R$ being unchanged}
+        \State $\by_i^{(r)} \gets \bf\left(\bx_i^{(r)}\right)$ for $r=1,\dots,R$ and $i=n_\text{start}+1,\dots,n_\text{end}$ where $\bb^{(\bmu)}=\textbf{\False}$ \\ \Comment{may be done in parallel if advantageous}
+        \State $\bmu^+,\bmu^- \gets \texttt{MCBounds}\left(\{\{\bx_i^{(r)}\}_{i=1}^{n_\text{end}}\}_{r=1}^R, \{\{\by_i^{(r)}\}_{i=1}^{n_\text{end}}\}_{r=1}^R,\balpha^{(\bmu)}\right)$ where $\bb^{(\bmu)}=\textbf{\False}$ \\ \Comment{may take advantage of $\{\{\bx_i^{(r)}\}_{i=1}^{n_\text{start}}\}_{r=1}^R$, $\{\{\by_i^{(r)}\}_{i=1}^{n_\text{start}}\}_{r=1}^R$, and $\balpha^{(\bmu)}$ being unchanged}
+        \State $\bs^- = \bC^-(\bmu^-,\bmu^+)$ where $\bb^{(\bs)} = \textbf{\False}$
+        \State $\bs^+ = \bC^+(\bmu^-,\bmu^+)$ where $\bb^{(\bs)} = \textbf{\False}$
+        \State $\hat{\bs} \gets \frac{1}{2}\left[\bs^-+\bs^++\bh_{\bvarepsilon}(\bs^-)-\bh_{\bvarepsilon}(\bs^+)\right]$ where $\bb^{(\bs)} = \textbf{\False}$
+        \State $\bb^{(\bs)} \gets \text{Boolean}(\bs^+-\bs^- < \bh_{\bvarepsilon}(\bs^-)+\bh_{\bvarepsilon}(\bs^+))$
+        \State $\bb^{(\bmu)} \gets \bD\left(\bb^{(\bs)}\right)$
         \State $n_\text{start} \gets n_\text{end}$
         \State $n_\text{end} \gets 2n_\text{start}$
     \EndWhile
+    \State \Return $\hat{\bs},\hat{\bs}^-,\hat{\bs}^+$
     \end{algorithmic}
 \end{algorithm}
 
 \section{Examples}
+
+Examples are implemented into the object oriented QMCPy framework. The four main abstract classes in QMCPy are the \emph{discrete distribution} class for generating IID or LD sequences, the \emph{true measure} class for facilitating variable transforms to adapt randomness to the standard uniform random variable, the \emph{integrand} class specifying the function of the true measure we want to take the expectation of, and the \emph{stopping criterion} class which implements Algorithm \ref{algo:MCStoppingCriterion}. Each MC problem must instantiate a subclass of each of the four abstract classes in a nested fashion. For example, if we are interested in approximating $\bbE[g(\bT)]$ for $\bT \sim \calN\left(\boldsymbol{m},\boldsymbol{\Sigma}\right)$ and $g(\bt)=\sum_{i=1}^{d_{\bX}} t_i^2$ we may use the code in listing \AGSNote{ref} below.
+
+\lstinputlisting[style=Python]{python/simple_ex.txt}
+
 
 \subsection{Vectorized Acquisition Functions for Bayesian Optimization}
 
@@ -293,7 +381,7 @@ $$\bx_{n+1},\dots,\bx_{n+q} = \argmax_{X \in [0,1]^{q \times d}}\alpha(X).$$
 Many acquisition functions may be expressed as expectations
 $$\alpha(X) = \bbE[a(Y) | Y \sim P(g(X)|D)]$$ % https://botorch.org/docs/acquisition
 where $P(f(X)|D)$ is the posterior distribution of $f$ at $X$ given already observed data $D$. Here we focus on the q-Expected Improvement acquisition function
-$$a(\by) = \max_{1 \leq i \leq} (y_i - y^*)_+$$
+$$a(\by) = \max_{1 \leq i \leq q} (y_i - y^*)_+$$
 where $y^*= \max(y_1,\dots,y_n)$ is the current maximum and $(\cdot)_+ = \max(\cdot,0)$. 
 
 Now, suppose we are interested in computing the acquisition function values at $X_1,\dots,X_k \in [0,1]^{q \times d}$, candidate next-$q$ point set to maximize $\alpha$. We vectorize the computation of $\alpha(X_1),\dots,\alpha(X_k)$ to
@@ -301,7 +389,7 @@ Now, suppose we are interested in computing the acquisition function values at $
     \begin{pmatrix} \alpha(X_1) \\ \dots \\ \alpha(X_k)\end{pmatrix} = \bbE\begin{pmatrix}a(\Phi_1^{-1}(X)) \\ \dots \\ a(\Phi_k^{-1}(X))\end{pmatrix}
     \label{eq:qei_vec}
 \end{equation}
-where $X \sim \calU[0,1]^q$ and $\Phi_k$ is the CDF of the Gaussian posterior distribution $P(f(X_k)|D)$. 
+where $X \sim \calU[0,1]^{q}$ and $\Phi_k$ is the CDF of the Gaussian posterior distribution $P(f(X_k)|D)$. 
 
 Since the quantity of interest is the vector of expectations in \eqref{eq:qei_vec}, the individual and combined solutions are the same, $\bmu = \bs \in \bbR_+^q$, and we may set both the error transformation functions $C^-,C^+$ and the dependency function $D$ to the identity function. In QMCPy, these identity functions are the default. 
 
@@ -310,7 +398,8 @@ Since the quantity of interest is the vector of expectations in \eqref{eq:qei_ve
 Consider a model with predictor $\bx = (1,x_1, \dots, x_{d-1}) \in \bbR^d$ and binary response $y \in \{0,1\}$. Logistic regression models the probability of observing $y = 1$ given $\bx$ to $P(y=1;\bx) = \left(1+\exp(-\bs.\bx)\right)^{-1}$ where $\bs \in \bbR^d$ is the coefficient vector of model parameters which we are interested in approximating.
 
 A normal prior on $\bs$ with prior mean $\bnu$ and prior covariance $\mSigma$ yields the prior density
-$$P(\bs) = \frac{\exp\left(-(\bs-\bnu)^T\mSigma^{-1}(\bs-\bmu)/2\right)}{\sqrt{(2\pi)^d\lvert \mSigma\rvert}}.$$ Now, suppose we have observed $N$ responses $y_1,\dots,y_N$ at IID sampling locations $\bx_1,\dots,\bx_N$. Then the likelihood of these observations given coefficients $\bs$ is
+$$P(\bs) = \frac{\exp\left(-(\bs-\bnu)^T\mSigma^{-1}(\bs-\bnu)/2\right)}{\sqrt{(2\pi)^d\lvert \mSigma\rvert}}.$$ 
+Now, suppose we have observed $N$ responses $y_1,\dots,y_N$ at IID sampling locations $\bx_1,\dots,\bx_N$. Then the likelihood of these observations given coefficients $\bs$ is
 \begin{equation*}
     P(y_1,\dots,y_N ; \bs) = \prod_{i=1}^N \left(\frac{\exp(\bs.\bx_i)}{1+\exp(\bs.\bx_i)}\right)^{-y_i} \left(1-\frac{\exp(\bs.\bx_i)}{1+\exp(\bs.\bx_i)}\right)^{1-y_i} = \prod_{i=1}^N \frac{\exp(\bs.\bx_i)^{y_i}}{1+\exp(\bs.\bx_i)}
 \end{equation*}
@@ -342,7 +431,7 @@ Moreover, we set the dependency function $D: \tfset^d \to \tfset^{2 \times d}$ t
 
 \subsubsection{Haberman's Dataset Example}
 
-Here we perform logistic regression on the Haberman's Survival Dataset retreived from the UCI Machine Learning Repository \cite{uci_ml_repo}. This dataset concerns a study between 1958 and 1970 at the University of Chicago's Billings Hospital that tracked the survival of patients five years after undergoing treatment for breast cancer. Predictors include the age of patient at the time of operation, operation year after 1900 e.g. 65 is 1965, and number of positive axillary nodes detected. The binary response variable indicates the patients survival status five years after the operation. 
+Here we perform logistic regression on the Haberman's Survival Dataset retrieved from the UCI Machine Learning Repository \cite{uci_ml_repo}. This dataset concerns a study between 1958 and 1970 at the University of Chicago's Billings Hospital that tracked the survival of patients five years after undergoing treatment for breast cancer. Predictors include the age of patient at the time of operation, operation year after 1900 e.g. 65 is 1965, and number of positive auxiliary nodes detected. The binary response variable indicates the patients survival status five years after the operation. 
 
 We use 2/3 of the dataset for training and the remaining 1/3 for testing. The training set has 151 positive records and 54 negative records while the testing set has 74 positive records and 27 negative records. The class imbalance reflects the fact that most patients in the study survived longer than 5 years after the operation. Since we value identifying at risk patients, we seek models with a low number of false negative predictions i.e. we desire models with high recall. Table \ref{tab:lr_models} compares a Bayesian logistic model against logistic regression models fit with an Elastic net regularization penalty
 $$\min_{\bs,c} \left[\frac{1-\lambda}{2} \lVert \bs \rVert_2^2 + \lambda \lVert \bs \rVert_1+C\sum_{i=1}^N\log(\exp(-y_i(\bx_i.\bs+c))+1)\right]$$
@@ -352,7 +441,7 @@ where $C>0$ constant and $\lambda \in [0,1]$ controls the trade-off between $l_1
     \centering
     \begin{tabular}{l|rrrr|rrr}
         Method &\multicolumn{4}{|c|}{Coefficients} &\multicolumn{3}{c}{Test Metrics \%}\\
-        {} &       Age &  1900 Year &  Axillary Nodes &  Intercept &  Accuracy &  Precision &   Recall \\
+        {} &       Age &  1900 Year &  Auxiliary Nodes &  Intercept &  Accuracy &  Precision &   Recall \\
         \midrule
         % begin insert
         Elastic-Net $\lambda=0.0$ & -1.23e-02 &   3.44e-02 &       -1.15e-01 &   1.99e-03 &     74.3 &      76.7 &   93.2 \\
@@ -365,6 +454,7 @@ where $C>0$ constant and $\lambda \in [0,1]$ controls the trade-off between $l_1
     \caption{Comparison of Logistic regression models for the Haberman dataset.}
     \label{tab:lr_models}
 \end{table}
+
 \subsection{Sensitivity Indices}
 
 Sensitivity analysis quantifies how uncertainty in a functions output may be attributed to subsets of function inputs. Functional ANOVA (analysis of variance) decomposes an objective function $f \in L^2((0,1)^d)$ into the sum of orthogonal functions $(f_u)_{u \subseteq 1:d}$. Here $1:d$ denotes the set of all dimensions $\{1,\dots,d\}$ and $f_u \in L^2((0,1)^{\lvert u \rvert})$ denotes a sub-function dependent only on inputs $\bx_u = (x_j)_{j \in u}$. By construction, these sub-functions sum to the objective function so that
@@ -396,14 +486,14 @@ Suppose one is interested in computing the closed and total sensitivity indices 
     \mu_{3j} &= \mu_{4j} = \int_{[0,1]^d} f(\bx)\D\bx, \\
     \mu_{5j} &= \mu_{6j} = \int_{[0,1]^d} f^2(\bx)\D\bx, \\
     s_{1j} &= \underline{s}_{u_j} = \frac{\underline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{1j}}{\mu_{5j}-\mu_{3j}^2}, \qquad \text{and} \\
-    s_{2j} &= \overline{s}_{u_j} = \frac{\overline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{2j}}{\mu_{6j}-\mu_{4j}}.
+    s_{2j} &= \overline{s}_{u_j} = \frac{\overline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{2j}}{\mu_{6j}-\mu_{4j}^2}.  
 \end{align*}
 Here the notation
 \begin{equation}
     (\bx_{u},\bz_{-u}) = \left(\begin{aligned}x_{j}, \quad & j \in u \\ z_{j}, \quad & j \notin u \end{aligned}\right)_{j=1}^d
 \end{equation}
 denotes a point with inputs $u$ from $\bx$ and inputs $-u=(1:d)\cap u^c$ from $\bz$.
-For $\bmu$, the first row contains closed Sobol' indices, the second row contains total Sobol' indices, the third / forth row contain copied first moments of $f$, and the forth / fifth row contain copied second moments of $f$. As in the previous section, we have copied various individual solutions to maintain separate estimates of the first / second moments for each combined solution. For $\bs$, the first row contains closed sensitivity indices while the second row contains total sensitivity indices. 
+For $\bmu$, the first row contains closed Sobol' indices, the second row contains total Sobol' indices, the third / fourth row contain copied first moments of $f$, and the forth / fifth row contain copied second moments of $f$. As in the previous section, we have copied various individual solutions to maintain separate estimates of the first / second moments for each combined solution. For $\bs$, the first row contains closed sensitivity indices while the second row contains total sensitivity indices. 
 
 Then bounds from individual to combined solutions may be transformed via $C^-,C^+:\bbR^{6 \times k} \to \bbR^{2 \times k}$ defined, for $j=1,\dots,k$, by  
 \begin{align*}
@@ -457,7 +547,9 @@ Figure \ref{fig:ishigami_fu} shows exact functional ANOVA sub-functions $f_u$ fo
     \label{fig:ishigami}
 \end{figure}
 
-\AGSNote{\subsubsection{Machine Learning Examples}}
+\AGSNote{\subsubsection{Machine Learning Examples}
+
+See \cite{hoyt2021efficient}}
 
 %\AGSNote{Maybe use the decision trees for iris dataset from \url{https://github.com/QMCSoftware/QMCSoftware/blob/iris/demos/iris.ipynb}. The results aren't that impressive since Iris is a pretty small dataset and sensitivity indices are somewhat automatic for decision trees. I'd like to do something like we have in this notebook though. This paper could include one or both of the analysis procedures. Hyperparameter importance is interesting, but currently doesn't have a lot of actionable results. Feature importance is more interesting / relevant, I'm leaning towards this. Art Owen and Chris Hoyt have done something similar for neural networks which is pretty interesting. Including both would be ideal (but time consuming).}
 
