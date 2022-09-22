@@ -4,14 +4,21 @@
       year={2020+},
       note= {qmcpy.org},
 }
-@misc{QMCSoftware,
-      title={Quasi-{M}onte {C}arlo Software}, 
-      author={S.-C. T. Choi and F. J. Hickernell and R. Jagadeeswaran and M. J. McCourt and A. G. Sorokin},
-      year={2021},
-      note= {arXiv:2102.07833 [cs.MS]},
-      eprint={2102.07833},
-      archivePrefix={arXiv},
-      primaryClass={cs.MS}
+@InProceedings{QMCSoftware,
+    author="Choi, Sou-Cheng T.
+    and Hickernell, Fred J.
+    and Jagadeeswaran, Rathinavel
+    and McCourt, Michael J.
+    and Sorokin, Aleksei G.",
+    editor="Keller, Alexander",
+    title="Quasi-Monte Carlo Software",
+    booktitle="Monte Carlo and Quasi-Monte Carlo Methods",
+    year="2022",
+    publisher="Springer International Publishing",
+    address="Cham",
+    pages="23--47",
+    abstract="Practitioners wishing to experience the efficiency gains from using low discrepancy sequences need correct, robust, well-written software. This article, based on our MCQMC 2020 tutorial, describes some of the better quasi-Monte Carlo (QMC) software available. We highlight the key software components required by QMC to approximate multivariate integrals or expectations of functions of vector random variables. We have combined these components in QMCPy, a Python open-source library, which we hope will draw the support of the QMC community. Here we introduce QMCPy.",
+    isbn="978-3-030-98319-2"
 }
 @misc{QMCPy,
 	Author = {Sou-Cheng T. Choi and Fred J. Hickernell and R. Jagadeeswaran and Michael J. McCourt and Aleksei G. Sorokin},
@@ -159,13 +166,13 @@
     archivePrefix={arXiv},
     primaryClass={math.NA}}
 
-@misc{adaptive_qmc,
-      title={Adaptive Quasi-Monte Carlo Methods for Cubature}, 
-      author={Fred J. Hickernell and Lluís Antoni Jiménez Rugama and Da Li},
-      year={2017},
-      eprint={1702.01491},
-      archivePrefix={arXiv},
-      primaryClass={math.NA}
+@incollection{adaptive_qmc,
+  title={Adaptive quasi-Monte Carlo methods for cubature},
+  author={Hickernell, Fred J and Jim{\'e}nez Rugama, Llu{\'\i}s Antoni and Li, Da},
+  booktitle={Contemporary Computational Mathematics-A Celebration of the 80th Birthday of Ian Sloan},
+  pages={597--619},
+  year={2018},
+  publisher={Springer}
 }
 
 @article{cubqmcbayeslattice,
@@ -177,12 +184,20 @@
    number={6},
    journal={Statistics and Computing},
    publisher={Springer Science and Business Media LLC},
-   author={Jagadeeswaran, R. and Hickernell, Fred J.},
+   author={Rathinavel, Jagadeeswaran, and Hickernell, Fred J.},
    year={2019},
    month={Sep},
    pages={1215–1229}
 }
 
+@phdthesis{cubqmcbayes_thesis,
+	author  = {Jagadeeswaran Rathinavel},
+	school  = {Illinois Institute of Technology, Chicago},
+	title   = {{F}ast automatic {B}ayesian cubature using matching kernels and designs},
+	type    = {PhD Thesis},
+	year    = {Dec 2019},
+	url  = {www.math.iit.edu}
+}
 
 @incollection{pytorch,
     title = {PyTorch: An Imperative Style, High-Performance Deep Learning Library},
@@ -275,3 +290,15 @@
   year = {2016},
   copyright = {arXiv.org perpetual, non-exclusive license}
 }
+
+@misc{bo_tutorial_frazier,
+  doi = {10.48550/ARXIV.1807.02811},
+  url = {https://arxiv.org/abs/1807.02811},
+  author = {Frazier, Peter I.},
+  keywords = {Machine Learning (stat.ML), Machine Learning (cs.LG), Optimization and Control (math.OC), FOS: Computer and information sciences, FOS: Computer and information sciences, FOS: Mathematics, FOS: Mathematics},
+  title = {A Tutorial on Bayesian Optimization},
+  publisher = {arXiv},
+  year = {2018},
+  copyright = {arXiv.org perpetual, non-exclusive license}
+}
+
