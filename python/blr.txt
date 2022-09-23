@@ -1,0 +1,30 @@
+blr = qp.BayesianLRCoeffs(
+    sampler = qp.DigitalNetB2(4,seed=7),
+    feature_array = xt,
+    response_vector = yt,
+    prior_mean = 0,
+    prior_covariance = 5)
+qmc_sc = qp.CubQMCNetG(blr,
+    abs_tol = .05,
+    rel_tol = .5,
+    error_fun = lambda s,abs_tol,rel_tol: np.minimum(abs_tol,abs(s)*rel_tol),
+    n_max = 2**19)
+blr_coefs,blr_data = qmc_sc.integrate()
+print(blr_data)
+# LDTransformData (AccumulateData Object)
+#     solution        [-0.004  0.13  -0.157  0.008]
+#     indv_error      [[4.165e-166 1.126e-164 3.129e-061 9.375e-099]
+#                     [8.956e-164 8.956e-164 2.094e-060 1.038e-096]]
+#     ci_low          [[-3.082e-165  6.079e-164 -2.316e-060  5.063e-098]
+#                     [ 4.836e-163  4.836e-163  1.131e-059  5.608e-096]]
+#     ci_high         [[-2.249e-165  8.331e-164 -1.690e-060  6.938e-098]
+#                     [ 6.628e-163  6.628e-163  1.550e-059  7.684e-096]]
+#     ci_comb_low     [-0.006  0.092 -0.205  0.007]
+#     ci_comb_high    [-0.003  0.172 -0.109  0.012]
+#     flags_comb      [ True  True  True  True]
+#     flags_indv      [[ True  True  True  True]
+#                     [ True  True  True  True]]
+#     n_total         2^(18)
+#     n               [[  1024.   1024. 262144.   2048.]
+#                     [  1024.   1024. 262144.   2048.]]
+#     time_integrate  2.239

@@ -374,11 +374,11 @@ Examples are implemented into the object oriented QMCPy framework. The four main
 
 \subsection{Vectorized Acquisition Functions for Bayesian Optimization}
 
-Bayesian optimization (BO) is a sequential optimization technique that attempts to find the global maximum of a black box function $\tilde{f}: (0,1)^{D} \to \bbR$\footnote{$D$ is the dimension of the domain of $\tilde{f}$, not to be confused with the bold dependency function $\bD$.}. It is assumed that $\tilde{f}$ is expensive to evaluate, so we must strategically select sampling locations that maximize some utility or acquisition function. At a high level, BO iteratively samples $\tilde{f}$ at locations maximizing the acquisition function, updates the Gaussian process surrogate based on these new observations, updates the acquisition function based on the updated surrogate, and repeats. More details on Bayesian optimization including formulas for the posterior mean and covariance may be found in \cite{frazier2018tutorial}.
+Bayesian optimization (BO) is a sequential optimization technique that attempts to find the global maximum of a black box function $\tilde{f}: (0,1)^{d} \to \bbR$. It is assumed that $\tilde{f}$ is expensive to evaluate, so we must strategically select sampling locations that maximize some utility or acquisition function. At a high level, BO iteratively samples $\tilde{f}$ at locations maximizing the acquisition function, updates the Gaussian process surrogate based on these new observations, updates the acquisition function based on the updated surrogate, and repeats. More details on Bayesian optimization including formulas for the posterior mean and covariance may be found in \cite{frazier2018tutorial}.
 
-Concretely, suppose we have already sampled $\tilde{f}$ at $\bz_1,\dots,\bz_{N} \in [0,1]^{D}$ to collect data $\calD=\{(\bz_i,y_i)\}_{i=1}^N$ where $y_i = \tilde{f}(\bz_i)$. BO may then fit a Gaussian process surrogate $\tilde{g}$ to data $\calD$. Then, the next $q$ sampling locations are chosen to maximize  the acquisition function $\alpha$ based on the surrogate $\tilde{g}$ so that 
+Concretely, suppose we have already sampled $\tilde{f}$ at $\bz_1,\dots,\bz_{N} \in [0,1]^{d}$ to collect data $\calD=\{(\bz_i,y_i)\}_{i=1}^N$ where $y_i = \tilde{f}(\bz_i)$. BO may then fit a Gaussian process surrogate $\tilde{g}$ to data $\calD$. Then, the next $q$ sampling locations are chosen to maximize  the acquisition function $\alpha$ based on the surrogate $\tilde{g}$ so that 
 \begin{equation}
-    \begin{pmatrix}\bz_{N+1} \\ \vdots \\ \bz_{N+q}\end{pmatrix} = \argmax_{\bZ \in [0,1]^{q \times D}}\alpha(\bZ).
+    \begin{pmatrix}\bz_{N+1} \\ \vdots \\ \bz_{N+q}\end{pmatrix} = \argmax_{\bZ \in [0,1]^{q \times d}}\alpha(\bZ).
     \label{eq:nextq}
 \end{equation}
 Many acquisition functions may be expressed as an expectation of the form
@@ -387,7 +387,7 @@ where $\boldsymbol{m}$, $\bSigma$ are the posterior mean and covariance respecti
 $$a(\by) = \max_{1 \leq i \leq q} (y_i - y^*)_+$$
 where $y^*= \max\left(y_1,\dots,y_N\right)$ is the current maximum and $(\cdot)_+ = \max(\cdot,0)$. 
 
-Now, suppose that in \eqref{eq:nextq} we take the maximum argument from among a set of candidate $q$-sized batches $\bZ_1,\dots,\bZ_c \in [0,1]^{q \times D}$. We vectorize the computation to 
+Now, suppose that in \eqref{eq:nextq} we take the maximum argument from among a set of candidate $q$-sized batches $\bZ_1,\dots,\bZ_c \in [0,1]^{q \times d}$. We vectorize the computation to 
 \begin{equation}
     \begin{pmatrix} \alpha(\bZ_1) \\ \vdots \\ \alpha(\bZ_c)\end{pmatrix} = \bbE\begin{pmatrix}a\left(\bA_1\Phi^{-1}(\bX)+\boldsymbol{m}_1\right) \\ \vdots \\ a\left(\bA_c\Phi^{-1}(\bX)+\bm_c\right)\end{pmatrix}
     \label{eq:qei_vec}
@@ -396,7 +396,7 @@ where $\bX \sim \calU(0,1)^q$ and $\Phi^{-1}$ is the inverse CDF of the standard
 $$\bA_i\Phi^{-1}(\bX)+\boldsymbol{m}_i \sim \calN\left(\bm_i,\bSigma_i\right)$$
 for $i=1,\dots,c$.
 
-Since the quantity of interest is simply the vector of expectations in \eqref{eq:qei_vec}, one may set $\bC$, $\bC^-$, $\bC^+$, and $\bD$ to appropriate identity functions. The process described above is visualized in Figure \ref{fig:bo_qei} for $q=D=2$. Notice the next points trade off exploiting parts of the domain where performant samples have already been seen and  exploring parts of the domain where the Gaussian Process has large uncertainty.  As $q$ and/or $D$ grow the number of candidates $c$ required to get a good discrete approximation of \eqref{eq:nextq} grows rapidly thus making such non-greedy acquisition functions intractable for moderate values of $q$ or $D$.
+Since the quantity of interest is simply the vector of expectations in \eqref{eq:qei_vec}, one may set $\bC$, $\bC^-$, $\bC^+$, and $\bD$ to appropriate identity functions. The process described above is visualized in Figure \ref{fig:bo_qei} for $q=d=2$. Notice the next points trade off exploiting parts of the domain where performant samples have already been seen and  exploring parts of the domain where the Gaussian Process has large uncertainty.  As $q$ and/or $d$ grow the number of candidates $c$ required to get a good discrete approximation of \eqref{eq:nextq} grows rapidly thus making such non-greedy acquisition functions intractable for moderate values of $q$ or $d$.
 
 \begin{figure}[H]
     \centering
@@ -416,17 +416,17 @@ $$\bs = \bbE\left[\bS \mid y_1,\dots,y_{N}\right] = \frac{\bbE\left[\bS \prod_{i
 As before, the expectations are taken with respect to the prior distribution on $\bS$. In the framework of this article $\bmu \in \bbR^{2 \times d_{\bs}}$ where for $k=1,\dots,d_{\bs}$ we have 
 $$\mu_{0k} = \bbE\left[S_i \prod_{i=1}^{N} \rho(y_i \mid \bS)\right], \qquad \mu_{1k} = \bbE\left[\prod_{i=1}^{N} \rho(y_i \mid \bS)\right], \qquad \text{and} \qquad s_k = \frac{\mu_{0k}}{\mu_{1k}}.$$
 While $\mu_{1k}$ is the same for all $1 \leq k \leq d_{\bs}$, we opt to keep separate denominator estimates for implementation efficiency. Defining $\bC^-$ and $\bC^+$ follow from vectorizing the quotient forms in Table \ref{table:elementary_ops_Cpm} while the dependency function $\bD: \tfset^{d_{\bs}} \to \tfset^{2 \times d_{\bs}}$ may be defined by stacking row vectors of combined flags such that
-$$D\left(\bb^{(\bs)}\right) = \begin{pmatrix} \bb^{(\bs)} \\ \bb^{(\bs)} \end{pmatrix}.$$
+$$\bD\left(\bb^{(\bs)}\right) = \begin{pmatrix} \bb^{(\bs)} \\ \bb^{(\bs)} \end{pmatrix}.$$
 
 For a concrete example consider Bayesian logistic regression. Here the dataset contains observations $y_i \in \{0,1\}$ at locations $\bz_i = \left(1,z_2,\dots,z_{d_{\bs}}\right)$ for $i=1,\dots,N$. The likelihood function is given by the sigmoid function
 $$\rho(y_i = 1 \mid \bS) = \frac{\exp(\bS.\bz_i)}{1+\exp(\bS.\bz_i)}$$
 so that
 $$P(y_1,\dots,y_N \mid \bS) = \prod_{i=1}^N \left(\frac{\exp(\bS.\bz_i)}{1+\exp(\bS.\bz_i)}\right)^{y_i} \left(1-\frac{\exp(\bS.\bz_i)}{1+\exp(\bS.\bz_i)}\right)^{1-y_i} = \prod_{i=1}^N \frac{\exp(\bS.\bz_i)^{y_i}}{1+\exp(\bS.\bz_i)}.$$
 
-Listing \AGSNote{CITE} uses the normal prior $\bS \sim \calN(\bm,\bSigma)$ so that
+Listing \ref{py:blr} performs Bayesian logistic regression in QMCPy on the Haberman's Survival Dataset retrieved from the UCI Machine Learning Repository \cite{uci_ml_repo}. Here we uses the normal prior $\bS \sim \calN(\bm,\bSigma)$ so that
 $$P(\bS) = \frac{\exp\left(-(\bS-\bm)^T\bSigma^{-1}(\bs-\bm)/2\right)}{\sqrt{(2\pi)^d\lvert \bSigma \rvert}}.$$
 
-\AGSNote{LISTING HERE}
+\lstinputlisting[caption={Bayesian Logistic Regression},style=Python,label={py:blr}]{python/blr.txt}
 
 % \subsubsection{Haberman's Dataset Example}
 
@@ -456,18 +456,18 @@ $$P(\bS) = \frac{\exp\left(-(\bS-\bm)^T\bSigma^{-1}(\bs-\bm)/2\right)}{\sqrt{(2\
 
 \subsection{Sensitivity Indices}
 
-Sensitivity analysis quantifies how uncertainty in a functions output may be attributed to subsets of function inputs. Functional ANOVA (analysis of variance) decomposes an objective function $f \in L^2((0,1)^d)$ into the sum of orthogonal functions $(f_u)_{u \subseteq 1:d}$. Here $1:d$ denotes the set of all dimensions $\{1,\dots,d\}$ and $f_u \in L^2((0,1)^{\lvert u \rvert})$ denotes a sub-function dependent only on inputs $\bx_u = (x_j)_{j \in u}$. By construction, these sub-functions sum to the objective function so that
+Sensitivity analysis quantifies how uncertainty in a functions output may be attributed to subsets of function inputs. Functional ANOVA (analysis of variance) decomposes an objective function $\tilde{f} \in L^2(0,1)^d_{\bX}$ into the sum of orthogonal functions $(\tilde{f}_u)_{u \subseteq 1:d_{\bX}}$. Here $1:d_{\bX}=\{1,\dots,d_{\bX}\}$ denotes the set of all dimensions and $\tilde{f}_u \in L^2(0,1)^{\lvert u \rvert}$ denotes a sub-function dependent only on inputs $\bx_u = (x_j)_{j \in u}$ where $\lvert u \rvert$ is the cardinality of $u$. By construction, these sub-functions sum to the objective function so that
 \begin{equation}
-    f(\bx) = \sum_{u \subseteq 1:d} f_u(\bx_u) \label{eq:fanova}
+    \tilde{f}(\bx) = \sum_{u \subseteq 1:d_{\bX}} \tilde{f}_u(\bx_u) \label{eq:fanova}
 \end{equation}
-\cite[Appendix A]{mcbook}. The orthogonality of sub-functions enables the variance of $f$ to be decomposed into the sum of variances of sub-functions. Specifically, denoting the variance of $f$ by $\sigma^2$, we may write
+\cite[Appendix A]{mcbook}. The orthogonality of sub-functions enables the variance of $\tilde{f}$ to be decomposed into the sum of variances of sub-functions. Specifically, denoting the variance of $\tilde{f}$ by $\sigma^2$, we may write
 \begin{equation*}
-    \sigma^2 = \sum_{u \subseteq 1:d} \sigma^2_u
+    \sigma^2 = \sum_{u \subseteq 1:d_{\bX}} \sigma^2_u
 \end{equation*}
-where $\sigma^2_u$ is the variance of sub-function $f_u$. The sub-variance $\sigma_u$ directly quantifies the variance of $f$ attributable to inputs $u \subseteq 1:d$.  The \emph{closed and total Sobol' indices},
+where $\sigma^2_u$ is the variance of sub-function $\tilde{f}_u$. The sub-variance $\sigma_u$ directly quantifies the variance of $\tilde{f}$ attributable to inputs $u \subseteq 1:d_{\bX}$.  The \emph{closed and total Sobol' indices},
 \begin{equation}
     \label{eq:sobol_indices}
-    \underline{\tau}_u^2 = \sum_{v \subset u} \sigma^2_v \quad \text{and} \quad 
+    \underline{\tau}_u^2 = \sum_{v \subseteq u} \sigma^2_v \quad \text{and} \quad 
     \overline{\tau}_u^2 = \sum_{v \cap u \neq \emptyset} \sigma^2_v,
 \end{equation}
 quantify the variance attributable to subsets of $u$ and subsets containing $u$ respectively. The \emph{sensitivity indices},
@@ -478,23 +478,23 @@ quantify the variance attributable to subsets of $u$ and subsets containing $u$ 
 \end{equation}
 normalize the Sobol' indices to quantify the proportion of variance explained by a given subset of inputs. 
 
-Suppose one is interested in computing the closed and total sensitivity indices of $f$ at $u_1,\dots,u_k \in 1:d$.  Then we may choose the individual solutions $\bmu \in \bbR^{6 \times k}$ and combined solutions $\bs \in \bbR^{2 \times k}$ where, for $j=1,\dots,k$,
+Suppose one is interested in computing the closed and total sensitivity indices of $\tilde{f}$ at $u_1,\dots,u_c \in 1:d_{\bX}$.  Then we may choose the individual solutions $\bmu \in \bbR^{6 \times c}$ and combined solutions $\bs \in \bbR^{2 \times c}$ where, for $j=1,\dots,c$,
 \begin{align*}
-    \mu_{1j} &= \underline{\tau}_{u_j}^2 = \int_{[0,1]^{2d}} f(\bx)[f(\bx_{u_j},\bz_{-{u_j}})-f(\bz)]\D\bx\D\bz \\
-    \mu_{2j} &= \overline{\tau}_{u_j}^2 = \frac{1}{2}\int_{[0,1]^{2d}} [f(\bz)-f(\bx_u,\bz_{-{u_j}})]^2\D\bx\D\bz \\
-    \mu_{3j} &= \mu_{4j} = \int_{[0,1]^d} f(\bx)\D\bx, \\
-    \mu_{5j} &= \mu_{6j} = \int_{[0,1]^d} f^2(\bx)\D\bx, \\
+    \mu_{1j} &= \underline{\tau}_{u_j}^2 = \int_{[0,1]^{2d_{\bX}}} f(\bx)[f(\bx_{u_j},\bz_{-{u_j}})-f(\bz)]\D\bx\D\bz \\
+    \mu_{2j} &= \overline{\tau}_{u_j}^2 = \frac{1}{2}\int_{[0,1]^{2d_{\bX}}} [f(\bz)-f(\bx_u,\bz_{-{u_j}})]^2\D\bx\D\bz \\
+    \mu_{3j} &= \mu_{4j} = \int_{[0,1]^{d_{\bX}}} f(\bx)\D\bx, \\
+    \mu_{5j} &= \mu_{6j} = \int_{[0,1]^{d_{\bX}}} f^2(\bx)\D\bx, \\
     s_{1j} &= \underline{s}_{u_j} = \frac{\underline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{1j}}{\mu_{5j}-\mu_{3j}^2}, \qquad \text{and} \\
     s_{2j} &= \overline{s}_{u_j} = \frac{\overline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{2j}}{\mu_{6j}-\mu_{4j}^2}.  
 \end{align*}
 Here the notation
 \begin{equation}
-    (\bx_{u},\bz_{-u}) = \left(\begin{aligned}x_{j}, \quad & j \in u \\ z_{j}, \quad & j \notin u \end{aligned}\right)_{j=1}^d
+    (\bx_{u},\bz_{-u}) = \left(\begin{aligned}x_{j}, \quad & j \in u \\ z_{j}, \quad & j \notin u \end{aligned}\right)_{j=1}^{d_{\bX}}
 \end{equation}
-denotes a point with inputs $u$ from $\bx$ and inputs $-u=(1:d)\cap u^c$ from $\bz$.
-For $\bmu$, the first row contains closed Sobol' indices, the second row contains total Sobol' indices, the third / fourth row contain copied first moments of $f$, and the forth / fifth row contain copied second moments of $f$. As in the previous section, we have copied various individual solutions to maintain separate estimates of the first / second moments for each combined solution. For $\bs$, the first row contains closed sensitivity indices while the second row contains total sensitivity indices. 
+denotes a point with inputs $u$ from $\bx$ and inputs $-u=(1:d_{\bX})\cap u^c$ from $\bz$.
+For $\bmu$, the first row contains closed Sobol' indices, the second row contains total Sobol' indices, the third / fourth row contain copied first moments of $\tilde{f}$, and the forth / fifth row contain copied second moments of $\tilde{f}$. As in the previous section, we have copied various individual solutions to maintain separate estimates of the first / second moments for each combined solution. For $\bs$, the first row contains closed sensitivity indices while the second row contains total sensitivity indices. 
 
-Then bounds from individual to combined solutions may be transformed via $C^-,C^+:\bbR^{6 \times k} \to \bbR^{2 \times k}$ defined, for $j=1,\dots,k$, by  
+Then bounds from individual to combined solutions may be transformed via $\bC^-,\bC^+:\bbR^{6 \times c} \to \bbR^{2 \times c}$ defined, for $j=1,\dots,c$, by  
 \begin{align*}
     C_{1j}^-(\bmu^-,\bmu^+) 
     &= \text{clip}\left(\min_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{1j}}{\mu_{5j}-\mu_{3j}^2}\right) \\
@@ -509,28 +509,26 @@ Then bounds from individual to combined solutions may be transformed via $C^-,C^
         1, &\text{else}
     \end{cases}
 \end{align*}
-where $\text{clip}(\cdot) = \min(1,\max(0,\cdot))$ restricts values between 0 and 1. Similarly, we may compute $C_{2j}^-$ by replacing indices 1,3,5 in $C_{1j}^-$ with indices 2,4,6 respectively and likewise for computing $C_{2j}^+$ from $C_{1j}^+$. Above, we have simplified the bounds using the facts that sensitivity indices are between 0 and 1, the variance of $f$ is non-negative, and Sobol' indices are non-negative. 
+where $\text{clip}(\cdot) = \min(1,\max(0,\cdot))$ restricts values between 0 and 1. Similarly, we may compute $C_{2j}^-$ by replacing indices 1,3,5 in $C_{1j}^-$ with indices 2,4,6 respectively and likewise for computing $C_{2j}^+$ from $C_{1j}^+$. Above, we have simplified the bounds using the facts that sensitivity indices are between 0 and 1, the variance of $\tilde{f}$ is non-negative, and Sobol' indices are non-negative. 
 
-Moreover, the dependency function $D:\tfset^{2 \times k} \to \tfset^{6 \times k}$ may be defined to vertically stack combined flags three times to produce individual flags so that 
+Moreover, the dependency function $\bD:\tfset^{2 \times c} \to \tfset^{6 \times c}$ may be defined to vertically stack combined flags three times to produce individual flags so that 
 \begin{equation*}
-    D(\bb) = \begin{pmatrix} \bb \\ \bb \\ \bb \end{pmatrix}.
+    \bD\left(\bb^{(\bs)}\right) = \begin{pmatrix} \bb^{(\bs)} \\ \bb^{(\bs)} \\ \bb^{(\bs)} \end{pmatrix}.
 \end{equation*}
-In the QMCPy implementation we further generalize to allow objective functions $f:[0,1]^d \to \bbR^{\tilde{\brho}}$ so that $\brho = (6,k,\tilde{\brho})$ and $\bseta = (2,k,\tilde{\brho})$.
+In the QMCPy implementation we further generalize to allow objective functions $\tilde{\bf}: (0,1)^{d_{\bX}} \to \bbR^{\tilde{\bd}_{\bmu}}$ so that $\bd_{\bmu} = (6,c,\tilde{\bd}_{\bmu})$ and $\bd_{\bs} = (2,c,\tilde{\bd}_{\bmu})$.
 
-Sensitivity indices present an important special case for computational complexity. Say our QMC algorithm takes $2^m$ total samples to accurately approximate closed and total sensitivity indices for $(u_j)_{j=1}^k \subseteq 1:d$. Then the computational cost is $\$(f)(2+k)2^m$ since every time our sensitivity index function is evaluated at $\bz = (\bx,\bz) \in [0,1]^{2d}$ we must evaluate the users objective function at $f(\bx)$, $f(\bz)$, and $f(\bx_{u_j},\bz_{-{u_j}})$ for $j=1,\dots,k$. Also note that when $f$ is defined to take samples in  $[0,1]^d$ to outcomes in $\bbR^{\tilde{\brho}}$, sensitivity index approximation requires a wrapper taking samples in $[0,1]^{2d}$ to outcomes in $\bbR^{\brho}$
+Sensitivity indices present an important special case for computational complexity. Say our QMC algorithm takes $2^m$ total samples to accurately approximate closed and total sensitivity indices for $(u_j)_{j=1}^c \subseteq 1:d_{\bX}$. Then the computational cost is $\$(\tilde{\bf})(2+c)2^m$ since every time our sensitivity index function is evaluated at $\bz = (\bx,\bz) \in [0,1]^{2d}$ we must evaluate the users objective function at $\bx$, $\bz$, and $(\bx_{u_j},\bz_{-{u_j}})$ for $j=1,\dots,c$. Also note that when $\tilde{\bf}$ is defined to take samples in  $(0,1)^{d_{\bX}}$ to outcomes in $\bbR^{\bd_{\bmu}}$, sensitivity index approximation requires a wrapper taking samples in $(0,1)^{2d_{\bX}}$ to outcomes in $\bbR^{\bd_{\bmu}}$
 
-If a user is only interested in approximating singleton sensitivity indices, $u_j = \{j\}$ for $j=1,\dots,d$, then it is possible to reduce the cost from $\$(f)(2+d)2^m$ to $\$(f)2^{m+1}$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Such designs have been extended to  Sobol' sequences \AGSNote{(digital nets?)} in \cite{replicated_designs_sobol_seq} and utilized for sensitivity index approximation in \cite{reliable_sobol_indices_approx}. In the future, we plan to optimize QMCPy to utilize replicated designs when the opportunity arises.
+If a user is only interested in approximating singleton sensitivity indices, $u_j = \{j\}$ for $j=1,\dots,d_{\bX}$, then it is possible to reduce the cost from $\$(\tilde{\bf})(2+d_{\bX})2^m$ to $\$(\tilde{\bf})2^{m+1}$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Such designs have been extended to  Sobol' sequences \AGSNote{(digital nets?)} in \cite{replicated_designs_sobol_seq} and utilized for sensitivity index approximation in \cite{reliable_sobol_indices_approx}. In the future, we plan to optimize QMCPy to utilize replicated designs when the opportunity arises.
 
 \subsubsection{Ishigami Function Example}
 
-The Ishigami function \cite{ishigami1990importance} is defined for $T \sim \calU(-\pi,\pi)^3$ as
+The Ishigami function \cite{ishigami1990importance} is defined for $\bT \sim \calU(-\pi,\pi)^3$ with parameters $a,b \in \bbR$ by
 \begin{equation*}
-    g(T) = \left(1+bT_3^4\right)\sin(T_1) + a\sin^2(T_2).
+    g(\bT) = \left(1+bT_3^4\right)\sin(T_1) + a\sin^2(T_2).
 \end{equation*}
 After a change of variables we may equivalently define the Ishigami function as 
-$f(X) = g\left(\pi(2X-1)\right)$ where $X \sim \calU(0,1)^3$. 
-
-Figure \ref{fig:ishigami_fu} shows exact functional ANOVA sub-functions $f_u$ for select $u \in 1:d$ and Figure \ref{fig:ishigami} shows approximate sensitivity indices for the Ishigami function. 
+$f(\bX) = g\left(\pi(2\bX-1)\right)$ where $\bX \sim \calU(0,1)^3$. Figure \ref{fig:ishigami_fu} shows exact functional ANOVA sub-functions $f_u$ for select $u \in 1:d_{\bX}$ and Figure \ref{fig:ishigami} shows approximate sensitivity indices for the Ishigami function. 
 
 \begin{figure}[H]
     \centering
@@ -546,9 +544,20 @@ Figure \ref{fig:ishigami_fu} shows exact functional ANOVA sub-functions $f_u$ fo
     \label{fig:ishigami}
 \end{figure}
 
-\AGSNote{\subsubsection{Machine Learning Examples}
+\subsubsection{Neural Network Classifier for Iris Dataset}
 
-See \cite{hoyt2021efficient}}
+In this example we compute sensitivity indices of a neural network classifier for the Iris dataset \cite{uci_ml_repo} in a similar manner to that in \cite{hoyt2021efficient}. The Iris dataset consists of input features \emph{sepal length (cm)}, \emph{sepal width (cm)}, \emph{petal length (cm)}, and \emph{petal width (cm)} from which an Iris is to be classified as either the \emph{setosa}, \emph{versicolor}, or \emph{virginica} species. We begin by fitting a neural network classifier \AGSNote{CITE} that takes in input features and outputs a size $3$ vector of probabilities for each species summing to $1$. Taking the argument maximum among these three probabilities gives a species prediction. On a held out portion of the dataset the neural network attains 98\% classification accuracy and may therefore be deemed a high quality surrogate for the true relation between input features and species classification. 
+
+Our problem is to quantify, for each species, the variability in the classification probability attributed to a set of inputs. In other words, we would like to compute the sensitivity indices for each species probability. In Listing \ref{py:nn} below we compute all sensitivity indices of interest. Note that $\bd_{\bmu} = (6,14,3)$ and $\bd_{\bs} = (2,14,3)$ since we have $3$ classes, $14$ sensitivity indies of interest, and we are computing both the closed and total sensitivity indices which rely on $6$ expectations per pair. Figure \AGSNote{ref} visualizes these sensitivity indices. 
+
+\lstinputlisting[caption={Neural Network Sensitivity Indices Logistic},style=Python,label={py:nn}]{python/nn.txt}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.8\textwidth]{figs/nn_si.pdf}
+    \caption{Closed sensitivity indices for neural network classification probability of each Iris species.}
+    \label{fig:nn_si}
+\end{figure}
 
 %\AGSNote{Maybe use the decision trees for iris dataset from \url{https://github.com/QMCSoftware/QMCSoftware/blob/iris/demos/iris.ipynb}. The results aren't that impressive since Iris is a pretty small dataset and sensitivity indices are somewhat automatic for decision trees. I'd like to do something like we have in this notebook though. This paper could include one or both of the analysis procedures. Hyperparameter importance is interesting, but currently doesn't have a lot of actionable results. Feature importance is more interesting / relevant, I'm leaning towards this. Art Owen and Chris Hoyt have done something similar for neural networks which is pretty interesting. Including both would be ideal (but time consuming).}
 
