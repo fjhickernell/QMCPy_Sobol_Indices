@@ -1,13 +1,21 @@
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
 data = load_iris()
-target_names = data['target_names']
-xt,xv,yt,yv = train_test_split(data['data'],data['target'],test_size=1/3,random_state=7)
+target_names = data["target_names"]
+xt,xv,yt,yv = train_test_split(data["data"],data["target"],
+    test_size = 1/3,
+    random_state = 7)
 mplc = MLPClassifier(random_state=7,max_iter=1024).fit(xt,yt)
 yhat = mplc.predict(xv)
-print('accuracy: %.1f%%'%(100*(yv==yhat).mean()))
+print("accuracy: %.1f%%"%(100*(yv==yhat).mean()))
 # accuracy: 98.0%
 sampler = qp.DigitalNetB2(4,seed=7)
 true_measure =  qp.Uniform(sampler,lower_bound=xt.min(0),upper_bound=xt.max(0))
-fun = qp.CustomFun(true_measure,g=lambda x,compute_flags: mplc.predict_proba(x),rho=(3,))
-si_fun = qp.SensitivityIndices(fun,indices='all')
+fun = qp.CustomFun(
+    true_measure = true_measure,
+    g = lambda x,compute_flags: mplc.predict_proba(x),
+    rho = (3,))
+si_fun = qp.SensitivityIndices(fun,indices="all")
 qmc_algo = qp.CubQMCNetG(si_fun,abs_tol = .005)
 nn_sis,nn_sis_data = qmc_algo.integrate()

@@ -1,14 +1,13 @@
 blr = qp.BayesianLRCoeffs(
     sampler = qp.DigitalNetB2(4,seed=7),
-    feature_array = xt,
-    response_vector = yt,
-    prior_mean = 0,
-    prior_covariance = 5)
+    feature_array = xt, # np.ndarray of shape (n,d-1)
+    response_vector = yt, # np.ndarray of shape (n,)
+    prior_mean = 0, # normal prior mean = (0,0,...,0)
+    prior_covariance = 5) # normal prior covariance = 5I
 qmc_sc = qp.CubQMCNetG(blr,
     abs_tol = .05,
     rel_tol = .5,
-    error_fun = lambda s,abs_tol,rel_tol: np.minimum(abs_tol,abs(s)*rel_tol),
-    n_max = 2**19)
+    error_fun = lambda s,abs_tol,rel_tol: np.minimum(abs_tol,abs(s)*rel_tol))
 blr_coefs,blr_data = qmc_sc.integrate()
 print(blr_data)
 # LDTransformData (AccumulateData Object)
