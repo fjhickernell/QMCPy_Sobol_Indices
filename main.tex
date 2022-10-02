@@ -216,7 +216,7 @@ This section is concerned with optimally approximating and bounding a scalar com
 $$s=C(\bmu)$$
 where $C: \bbR^{d_{\bmu}} \to \bbR$. 
 
-First, we  must decide how to set $\balpha^{(\bmu)} \in (0,1)^{d_{\bmu}}$ so that if \eqref{eq:indv_prob_bounds} holds then $P(\bmu \in [\bmu^-,\bmu^+]) \geq 1-\alpha^{(s)}$ where $\alpha^{(s)} \in (0,1)$ is the user specified uncertainty threshold on the combined solution. To do so, we let $\alpha_k^{(\bmu)} = \alpha^{(s)}/d_{\bmu}$ so that the Bonferroni, Boole inequalities give us 
+First, we  must decide how to set $\balpha^{(\bmu)} \in (0,1)^{d_{\bmu}}$ so that if \eqref{eq:indv_prob_bounds} holds then $P(\bmu \in [\bmu^-,\bmu^+]) \geq 1-\alpha^{(s)}$ where $\alpha^{(s)} \in (0,1)$ is the user specified uncertainty threshold on the combined solution. To do so, we might let $\alpha_k^{(\bmu)} = \alpha^{(s)}/d_{\bmu}$ so that the Bonferroni, Boole inequalities give us 
 \begin{align*}
     P(\bmu \in [\bmu^-,\bmu^+])
     &= P\left(\cap_{k=1}^{d_{\bmu}} \{\mu_k \in [\mu^-_k,\mu^+_k]\}\right) \\
@@ -459,7 +459,7 @@ This example uses the absolute and relative error metric \eqref{eq:h_abs_and_rel
 
 \subsection{Sensitivity Indices}
 
-Sensitivity analysis quantifies how uncertainty in a functions output may be attributed to subsets of function inputs. Functional ANOVA (analysis of variance) decomposes an objective function $\tilde{f} \in L^2(0,1)^d_{\bX}$ into the sum of orthogonal functions $(\tilde{f}_u)_{u \subseteq 1:d_{\bX}}$. Here $1:d_{\bX}=\{1,\dots,d_{\bX}\}$ denotes the set of all dimensions and $\tilde{f}_u \in L^2(0,1)^{\lvert u \rvert}$ denotes a sub-function dependent only on inputs $\bx_u = (x_j)_{j \in u}$ where $\lvert u \rvert$ is the cardinality of $u$. By construction, these sub-functions sum to the objective function so that
+Sensitivity analysis quantifies how uncertainty in a functions output may be attributed to subsets of function inputs. Functional ANOVA (analysis of variance) decomposes an objective function $\tilde{f} \in L^2(0,1)^{d_{\bX}}$ into the sum of orthogonal functions $(\tilde{f}_u)_{u \subseteq 1:d_{\bX}}$. Here $1:d_{\bX}=\{1,\dots,d_{\bX}\}$ denotes the set of all dimensions and $\tilde{f}_u \in L^2(0,1)^{\lvert u \rvert}$ denotes a sub-function dependent only on inputs $\bx_u = (x_j)_{j \in u}$ where $\lvert u \rvert$ is the cardinality of $u$. By construction, these sub-functions sum to the objective function so that
 \begin{equation}
     \tilde{f}(\bx) = \sum_{u \subseteq 1:d_{\bX}} \tilde{f}_u(\bx_u) \label{eq:fanova}
 \end{equation}
@@ -481,7 +481,7 @@ quantify the variance attributable to subsets of $u$ and subsets containing $u$ 
 \end{equation}
 normalize the Sobol' indices to quantify the proportion of variance explained by a given subset of inputs. 
 
-Suppose one is interested in computing the closed and total sensitivity indices of $\tilde{f}$ at $u_1,\dots,u_c \in 1:d_{\bX}$.  Then we may choose the individual solutions $\bmu \in \bbR^{6 \times c}$ and combined solutions $\bs \in \bbR^{2 \times c}$ so that for $j=1,\dots,c$
+Suppose one is interested in computing the closed and total sensitivity indices of $\tilde{f}$ at $u_1,\dots,u_c \subseteq 1:d_{\bX}$.  Then we may choose the individual solutions $\bmu \in \bbR^{6 \times c}$ and combined solutions $\bs \in \bbR^{2 \times c}$ so that for $j=1,\dots,c$
 \begin{align*}
     \mu_{1j} &= \underline{\tau}_{u_j}^2 = \int_{[0,1]^{2d_{\bX}}} f(\bx)[f(\bx_{u_j},\bz_{-{u_j}})-f(\bz)]\D\bx\D\bz \\
     \mu_{2j} &= \overline{\tau}_{u_j}^2 = \frac{1}{2}\int_{[0,1]^{2d_{\bX}}} [f(\bz)-f(\bx_u,\bz_{-{u_j}})]^2\D\bx\D\bz \\
@@ -566,6 +566,14 @@ This article has extended adaptive MC and QMC stopping criteria to support multi
 \subsection*{Article}
 
 \begin{itemize}
+    \item \AGSNote{Change $d_{\bX}$ to $d$?}
+    \item \AGSNote{Bayesian Posterior mean use $\beta$ and $b$ instead of $\bS$}
+    \item \AGSNote{Make algorithms more closely aligned with QMCPy framework or just describe the algorithms in words / equations and leave out the algorithms}
+    \item \AGSNote{Make subsections for Bonferroni bounds, interval arithmetic, and error metric / optimal approximation}
+    \item \AGSNote{Put significant equations at the beginning of section 4}
+    \item \AGSNote{introduce interval arithmetic sooner and present as more of a tool than passive reference}
+    \item \AGSNote{introduce QMCPy before the compatibility table}
+    \item \AGSNote{change \emph{crude} to \emph{simple} or \emph{IID} Monte Carlo}
     \item \AGSNote{go into details about Haberman's dataset used for logistic regression example? Compare with other logistic regression techniques?} 
     \item \AGSNote{Future work section?}
     \item \AGSNote{unclear / inconsistent notation?}
@@ -574,6 +582,8 @@ This article has extended adaptive MC and QMC stopping criteria to support multi
 \subsection*{Code}
 
 \begin{itemize}
+    \item \AGSNote{Change sensitivity indices to $2 \times 3 \times c$ instead of $6 \times c$}
+    \item \AGSNote{Better color scheme}
     \item \AGSNote{Figure \ref{fig:nn_si} xticklabels feature names instead of indices}
     \item \AGSNote{Allow custom function to take in array of functions to construct vectorized functions.}  
     \item \AGSNote{Allow QMCPy to construct a true measure from a list of 1d measures acting as independent independent marginals. Allow QMCPy to construct a true measure from an  ndarray of true measures each corresponds to one of the vector functions.} 
