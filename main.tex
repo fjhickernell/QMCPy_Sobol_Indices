@@ -500,12 +500,12 @@ normalize the Sobol' indices to quantify the proportion of variance explained by
 Suppose one is interested in computing the closed and total sensitivity indices of $\tilde{f}$ at $u_1,\dots,u_c \subseteq 1:d$.  Then we may choose the individual solutions $\bmu \in \bbR^{2 \times 3 \times c}$ and combined solutions $\bs \in \bbR^{2 \times c}$ so that for $j=1,\dots,c$
 \begin{equation}
 \begin{aligned}
-    \mu_{13j} &= \underline{\tau}_{u_j}^2 = \int_{[0,1]^{2d}} f(\bx)[f(\bx_{u_j},\bz_{-{u_j}})-f(\bz)]\D\bx\D\bz \\
-    \mu_{23j} &= \overline{\tau}_{u_j}^2 = \frac{1}{2}\int_{[0,1]^{2d}} [f(\bz)-f(\bx_u,\bz_{-{u_j}})]^2\D\bx\D\bz \\
-    \mu_{11j} &= \mu_{21j} = \int_{[0,1]^{d}} f(\bx)\D\bx, \\
-    \mu_{12j} &= \mu_{22j} = \int_{[0,1]^{d}} f^2(\bx)\D\bx, \\
-    s_{1j} &= \underline{s}_{u_j} = \frac{\underline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{13j}}{\mu_{11j}-\mu_{12j}^2}, \\
-    s_{2j} &= \overline{s}_{u_j} = \frac{\overline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{23j}}{\mu_{21j}-\mu_{22j}^2}.  
+    \mu_{11j} &= \underline{\tau}_{u_j}^2 = \int_{[0,1]^{2d}} f(\bx)[f(\bx_{u_j},\bz_{-{u_j}})-f(\bz)]\D\bx\D\bz \\
+    \mu_{21j} &= \overline{\tau}_{u_j}^2 = \frac{1}{2}\int_{[0,1]^{2d}} [f(\bz)-f(\bx_u,\bz_{-{u_j}})]^2\D\bx\D\bz \\
+    \mu_{12j} &= \mu_{22j} = \int_{[0,1]^{d}} f(\bx)\D\bx, \\
+    \mu_{13j} &= \mu_{23j} = \int_{[0,1]^{d}} f^2(\bx)\D\bx, \\
+    s_{1j} &= \underline{s}_{u_j} = \frac{\underline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{11j}}{\mu_{13j}-\mu_{12j}^2}, \\
+    s_{2j} &= \overline{s}_{u_j} = \frac{\overline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{21j}}{\mu_{23j}-\mu_{22j}^2}.  
 \end{aligned}
 \label{eq:mu_si}
 \end{equation}
@@ -513,20 +513,20 @@ Here the notation
 \begin{equation*}
     (\bx_{u},\bz_{-u}) = \left(\begin{aligned}x_{j}, \quad & j \in u \\ z_{j}, \quad & j \notin u \end{aligned}\right)_{j=1}^{d}
 \end{equation*}
-denotes a point with inputs $u$ from $\bx$ and inputs $-u=(1:d)\cap u^c$ from $\bz$. In \eqref{eq:mu_si}, $\bmu_1$ and $\bmu_2$ contain values for the closed and  total sensitivity indices respectively; $\bmu_{13}$ and $\bmu_{23}$ contain the closed and total Sobol' indices respectively; $\bmu_{i1}$ and $\bmu_{i2}$ contain first and second moments respectively for $i \in \{1,2\}$, again opting for duplicated estimates to enable more economic function evaluation. For the combined solutions, $\bs_1$ contains closed sensitivity indices while $\bs_2$ contains contains total sensitivity indices. 
+denotes a point with inputs $u$ from $\bx$ and inputs $-u=(1:d)\cap u^c$ from $\bz$. In \eqref{eq:mu_si}, $\bmu_1$ and $\bmu_2$ contain values for the closed and  total sensitivity indices respectively; $\bmu_{11}$ and $\bmu_{21}$ contain the closed and total Sobol' indices respectively; $\bmu_{i2}$ and $\bmu_{i3}$ contain first and second moments respectively for $i \in \{1,2\}$, again opting for duplicated estimates to enable more economic function evaluation. For the combined solutions, $\bs_1$ contains closed sensitivity indices while $\bs_2$ contains contains total sensitivity indices. 
 
 Bounds from individual to combined solutions may be propagated via $\bC^-,\bC^+:\bbR^{2 \times 3 \times c} \to \bbR^{2 \times c}$ defined for $i \in \{1,2\}$ and $j \in \{1,\dots,c\}$  by  
 \begin{align*}
     C_{ij}^-(\bmu^-,\bmu^+) 
-    &= \text{clip}\left(\min_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{i3j}}{\mu_{i1j}-\mu_{i2j}^2}\right) \\
+    &= \text{clip}\left(\min_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{i1j}}{\mu_{i3j}-\mu_{i2j}^2}\right) \\
     &= \begin{cases} 
-        \text{clip}\left(\min\left(\frac{\mu_{i3j}^-}{\mu_{i1j}^+-\left(\mu_{i2j}^-\right)^2},\frac{\mu_{i3j}^-}{\mu_{i1j}^+-\left(\mu_{i2j}^+\right)^2}\right)\right), & \mu_{i1j}^- - \left(\mu_{i2j}^\pm\right)^2 >0 \\
+        \text{clip}\left(\min\left(\frac{\mu_{i1j}^-}{\mu_{i3j}^+-\left(\mu_{i2j}^-\right)^2},\frac{\mu_{i1j}^-}{\mu_{i3j}^+-\left(\mu_{i2j}^+\right)^2}\right)\right), & \mu_{i3j}^- - \left(\mu_{i2j}^\pm\right)^2 >0 \\
         0, &\text{else}
     \end{cases} \\
     C_{ij}^+(\bmu^-,\bmu^+) 
-    &= \text{clip}\left(\max_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{i3j}}{\mu_{i1j}-\mu_{i2j}^2}\right) \\
+    &= \text{clip}\left(\max_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{i1j}}{\mu_{i3j}-\mu_{i2j}^2}\right) \\
     &= \begin{cases} 
-        \text{clip}\left(\max\left(\frac{\mu_{i3j}^+}{\mu_{i1j}^--\left(\mu_{i2j}^-\right)^2},\frac{\mu_{i3j}^+}{\mu_{i1j}^--\left(\mu_{i2j}^+\right)^2}\right)\right), & \mu_{i1j}^- - \left(\mu_{i2j}^\pm\right)^2 >0 \\
+        \text{clip}\left(\max\left(\frac{\mu_{i1j}^+}{\mu_{i3j}^--\left(\mu_{i2j}^-\right)^2},\frac{\mu_{i1j}^+}{\mu_{i3j}^--\left(\mu_{i2j}^+\right)^2}\right)\right), & \mu_{i3j}^- - \left(\mu_{i2j}^\pm\right)^2 >0 \\
         1, &\text{else}
     \end{cases}
 \end{align*}
@@ -595,16 +595,14 @@ Then when you add inline comments or comments below we know who made the suggest
 
 \begin{itemize}
     \item \AGSNote{Replace notation like $\bbR^{2 \times 3}$ with more consistent notation $\bbR^{(2,3)}$}
+    \item \AGSNote{change first Ishigami example to Cantilever Beam Functions from \url{https://www.sfu.ca/~ssurjano/canti.html}}
 \end{itemize}
 
 \subsection*{Code}
 
 \begin{itemize}
-    \item \AGSNote{add \texttt{CubQMCRep} alias}
     \item \AGSNote{Change figures to black and white}
-    \item \AGSNote{Change sensitivity indices code to $2 \times 3 \times c$ instead of $6 \times c$}
     \item \AGSNote{Figure \ref{fig:nn_si} xticklabels feature names instead of indices}
-    \item \AGSNote{Allow custom function to take in array of functions to construct vectorized functions.}  
     \item \AGSNote{Allow QMCPy to construct a true measure from a list of 1d measures acting as independent independent marginals. Allow QMCPy to construct a true measure from an  ndarray of true measures each corresponds to one of the vector functions.} 
     \item \AGSNote{\texttt{CubBayes} algorithms allow ndarray of \texttt{abs\_tol} and \texttt{rel\_tol} and \texttt{error\_fun}}
     \item \AGSNote{New PyPI release}
