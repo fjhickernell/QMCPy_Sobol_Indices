@@ -1,16 +1,18 @@
-a,b = 7,0.05
-discrete_distrib = qp.Lattice(dimension=3,seed=7)
-true_measure = qp.Uniform(
-    sampler = discrete_distrib,
-    lower_bound = -np.pi,
-    upper_bound = np.pi)
-integrand = qp.CustomFun(
-    true_measure = true_measure,
-    g = lambda t: (1+b*t[:,2]**4)*np.sin(t[:,0])+a*np.sin(t[:,1])**2)
-qmc_stop_crit = qp.CubQMCLatticeG(
-    integrand = integrand,
-    abs_tol = 1e-5,
-    rel_tol = 0)
+def cantilever_bam_function(T,compute_flags): # T is (n x 3)
+    Y = np.zeros((len(T),2),dtype=float) # (n x 2)
+    l,w,t = 100,4,2
+    T1,T2,T3 = T[:,0],T[:,1],T[:,2] # Python is indexed from 0
+    if compute_flags[0]: # x^2 in Python is "x**2"
+        Y[:,0] = 4*l**3/(T1*w*t)*np.sqrt(T2**2/t**4+T3**2/w**4) # D
+    if compute_flags[1]:
+        Y[:,1] = 600*(T2/(w*t**2)+T3/(w**2*t)) # S
+    return Y
+true_measure = qp.Gaussian(
+    sampler = qp.DigitalNetB2(dimension=3,seed=7),
+    mean = [2.9e7,500,1000],
+    covariance = [(1.45e6)**2,(100)**2,(100)**2]) # expand to diagonal matrix
+integrand = qp.CustomFun(true_measure,g=cantilever_bam_function,rho=2)
+qmc_stop_crit = qp.CubQMCNetG(integrand=integrand,abs_tol=1e-3,rel_tol=1e-6)
 solution,data = qmc_stop_crit.integrate()
 print(solution)
-# [3.5]
+# [2.42575885e+00 3.74999973e+04]

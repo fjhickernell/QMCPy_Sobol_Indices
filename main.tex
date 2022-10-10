@@ -109,7 +109,7 @@ This article generalizes \cite{adaptive_qmc} to develop Algorithm \ref{algo:MCSt
 
 The resulting vectorized MC algorithms for combined solutions are implemented into the open source QMCPy Python package \cite{QMCPy} which is distributed on both GitHub and PyPI. The implementations incorporate shared samples, multi-dimensional vectorization, parallel computation, and economical function evaluation to enable fast, efficient approximations. Section \ref{sec:examples} also provides use cases in QMCPy with all examples being fully reproducible in \AGSNote{cite \url{https://github.com/QMCSoftware/QMCSoftware/blob/mc_vec/demos/vectorized_qmc.ipynb}}.
 
-The remainder of the article is organized as follows. Section \ref{sec:MCM} provides a brief overview of scalar MC including both Crude and Quasi-MC methods. More detailed accounts of this mature field are available in \cite{niederreiter1992random,mcbook}. Section \ref{sec:Existing_QMC_Methods} outlines various MC methods for determining error bounds on a scalar individual solution. Section \ref{sec:comb_sol_approx} determines how to set uncertainty levels for individual bounds based on a desired uncertainty for a scalar combined solution and how to propagated bounds from individual to combined solutions using interval arithmetic \cite{interval_analysis}. Section \ref{sec:opt_comb_sol_sc} derives a stopping criterion and optimal approximation for a scalar combined solution based on a user-specified uncertainty threshold and error metric map. Vectorization to a multi-dimensional array of combined solutions is described Section \ref{sec: Vectorized Implementation} with special care taken to enable economical function evaluation. This section also details Algorithm \ref{algo:MCStoppingCriterion} which provides a framework for extending existing MC methods to accommodate approximating multi-dimensional arrays of combined solutions. Section \ref{sec:examples} presents examples from machine learning and global sensitivity analysis utilizing our implementation in QMCPy. We conclude with a brief summary \AGSNote{and future work?} in Section \ref{sec:conclusions}.   
+The remainder of the article is organized as follows. Section \ref{sec:MCM} provides a brief overview of scalar MC including both Crude and Quasi-MC methods. More detailed accounts of this mature field are available in \cite{niederreiter1992random,mcbook}. Section \ref{sec:Existing_QMC_Methods} outlines various MC methods for determining error bounds on a scalar individual solution. Section \ref{sec:comb_sol_approx} determines how to set uncertainty levels for individual bounds based on a desired uncertainty for a scalar combined solution and how to propagated bounds from individual to combined solutions using interval arithmetic \cite{interval_analysis}. Section \ref{sec:opt_comb_sol_sc} derives a stopping criterion and optimal approximation for a scalar combined solution based on a user-specified uncertainty threshold and error metric map. Vectorization to a multi-dimensional array of combined solutions is described Section \ref{sec: Vectorized Implementation} with special care taken to enable economical function evaluation. This section also details Algorithm \ref{algo:MCStoppingCriterion} which provides a framework for extending existing MC methods to accommodate approximating multi-dimensional arrays of combined solutions. Section \ref{sec:examples} presents examples from machine learning and global sensitivity analysis utilizing our implementation in QMCPy. We conclude with a brief summary in Section \ref{sec:conclusions}.   
 
 \section{Scalar Monte Carlo Methods} \label{sec:MCM}
 
@@ -130,7 +130,7 @@ The QMC methods in this article utilize randomized LD sequences that are extensi
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{figs/ld_seqs.pdf}
-    \caption{Contrast of IID points with randomized, extensible LD sequences. The first $2^6$ points of each sequence are shown in \AGSNote{cyan} with the next $2^6$ points in \AGSNote{magenta} and the $2^7$ points following that in \AGSNote{green}. Notice the gaps and clusters in the IID sequence contrasted with the more even coverage of LD sequences. Also notice that as the sample size is doubled the extensible LD sequences fills in the gaps left by previous nodes.}
+    \caption{Contrast of IID points with randomized, extensible LD sequences. The first $2^4$ points of each sequence are squares, the next $2^4$ points are circles, and the $2^5$ points following that are triangles. Notice the gaps and clusters in the IID sequence contrasted with the more even coverage of LD sequences. Also notice that as the sample size is doubled the extensible LD sequences fills in the gaps left by previous nodes.}
     \label{fig:ld_seqs}
 \end{figure}
 
@@ -365,12 +365,26 @@ The four main abstract classes in QMCPy are the
 \end{itemize}
 Each MC problem must instantiate a subclass of each of the four abstract classes in a nested fashion. 
 
-As a simple example, let us compute the expected value of an Ishigami function \cite{ishigami1990importance}
-\begin{equation}
-    g(\bT) = (1+bT_3^4)\sin(T_1)+a\sin^2(T_2)
-    \label{eq:ishigami}
-\end{equation}
-where $\bT \sim \calU(-\pi,\pi)^3$ and $a=7$, $b=0.05$ as in \cite{sobol1999use}. Listing \ref{py:simpleex} computes the scalar solution $s = mu = \bbE[g(\bT)]=\bbE[f(\bX)]$ for $\bX \sim \calU(0,1)^3$ and $f(\bx) = g((2\bx-1)\pi)$. Notice that \texttt{CustomFun} is constructed with $g$, a function of the true measure $\bT$, rather than $f$, a function of MC compatible $\bX$. The variable transform taking $g$ to $f$ is performed automatically by QMCPy without explicit specification from the user. Here the absolute or relative error metric \eqref{eq:h_abs_or_rel} is defaulted to. 
+As a simple example, let us compute the expected displacement and stress on a cantilever bream as defined in \cite{ simulationlib_cantilever}: 
+\begin{align*}
+    D(T_1,T_2,T_3) &= \frac{4l^3}{T_1 w t} \sqrt{\frac{T_2^2}{t^4} + \frac{T_3^2}{w^4}} \\ 
+    S(T_1,T_2,T_3) &= 600\left(\frac{T_2}{wt^2} + \frac{T_3}{w^2t}\right).
+    \label{eq:cantilever_bream}
+\end{align*}
+Here $l=100$, $w=4$, $t=2$ are constants and $T_1$, $T_2$, $T_3$ are independent Gaussian random variables with mean and standard deviation as defined as in the Table below.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{r c c l}
+        Gaussian Variable & mean & standard deviation & Description \\ 
+        \hline \\
+        $T_1$ & $2.9 \times 10^7$ & $1.45 \times 10^6$ & Young's modulus of beam material \\
+        $T_2$ & $500$ & $100$ & horizontal load on beam \\
+        $T_3$ & $1000$ & $100$ & vertical load on beam
+    \end{tabular}
+    \caption{}
+    \label{tab:cantilever_bream}
+\end{table}
+Listing \ref{py:simpleex} uses QMCPy to approximates $s_1 = \mu_1 = \bbE[D(\bT)]$ and $s_2 = \mu_2 = \bbE[S(\bT)]$ where the identity functions for $\bC^-$, $\bC^+$, and $\bD$ are defaulted to. Notice that \texttt{CustomFun} is constructed with $g$, a function of the true measure $\bT$, rather than $f$, a function of MC compatible $\bX$. The variable transform taking $g$ to $f$ is performed automatically by QMCPy without explicit specification from the user. Here the absolute or relative error metric \eqref{eq:h_abs_or_rel} is defaulted to.
 \lstinputlisting[caption={Simple QMCPy Example},style=Python,label={py:simpleex}]{python/simple_ex.txt}
 For more details on the QMCPy framework see \cite{QMCSoftware}.
 
@@ -387,16 +401,16 @@ More details on Bayesian optimization including formulas for the posterior mean 
 
 Concretely, suppose we have already sampled $\tilde{f}$ at $\bz_1,\dots,\bz_{N} \in [0,1]^{d}$ to collect data $\calD=\{(\bz_i,y_i)\}_{i=1}^N$ where $y_i = \tilde{f}(\bz_i)$. BO may then fit a Gaussian process surrogate $\tilde{g}$ to data $\calD$. The next $q$ sampling locations may then be chosen to maximize  an acquisition function $\alpha$ based on the surrogate $\tilde{g}$ so that 
 \begin{equation}
-    \begin{pmatrix}\bz_{N+1} \\ \vdots \\ \bz_{N+q}\end{pmatrix} = \argmax_{\bZ \in [0,1]^{q \times d}}\alpha(\bZ).
+    \begin{pmatrix}\bz_{N+1} \\ \vdots \\ \bz_{N+q}\end{pmatrix} = \argmax_{\bZ \in [0,1]^{(q,d)}}\alpha(\bZ).
     \label{eq:nextq}
 \end{equation}
 Many acquisition functions may be expressed as an expectation of the form
 $$\alpha(\bZ) = \bbE\left[a(\by) \mid \by \sim \calN\left(\boldsymbol{m},\bSigma\right)\right]$$
-where $\boldsymbol{m} \in \bbR^{q}$, $\bSigma \in \bbR^{q \times q}$ are the posterior mean and covariance respectively of the Gaussian process at points $\bZ$. Here we focus on the q-Expected Improvement (qEI) acquisition function which uses 
+where $\boldsymbol{m} \in \bbR^{q}$, $\bSigma \in \bbR^{(q, q)}$ are the posterior mean and covariance respectively of the Gaussian process at points $\bZ$. Here we focus on the q-Expected Improvement (qEI) acquisition function which uses 
 $$a(\by) = \max_{1 \leq i \leq q} (y_i - y^*)_+$$
 where $y^*= \max\left(y_1,\dots,y_N\right)$ is the current maximum and $(\cdot)_+ = \max(\cdot,0)$. 
 
-Now, suppose that in \eqref{eq:nextq} we take the maximum argument from among a finite set of $q$-sized batches $\bZ_1,\dots,\bZ_c \in [0,1]^{q \times d}$ so that 
+Now, suppose that in \eqref{eq:nextq} we take the maximum argument from among a finite set of $q$-sized batches $\bZ_1,\dots,\bZ_c \in [0,1]^{(q, d)}$ so that 
 \begin{equation}
     \begin{pmatrix}\bz_{N+1} \\ \vdots \\ \bz_{N+q}\end{pmatrix} = \argmax_{\bZ \in \{\bZ_1,\dots,\bZ_c\}}\alpha(\bZ).
     \label{eq:nextq_discrete}
@@ -415,7 +429,7 @@ Since the quantity of interest is simply the vector of expectations in \eqref{eq
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{figs/gp.pdf}
-    \caption{First, the true function has been sampled at the data points shown in the left panel. Next, a Gaussian Process is fit to the data points to approximate the true function, also shown in the left panel. With $q=2$, a fine grid of candidates is chosen in $[0,1]^{2}$ and the acquisition function is approximated at each of these candidates. These approximations are made into a contour plot in the right panel. The discrete argument maximum among these approximations on the fine grid is the next size $q$ batch of points by qEI. These next points for sequential optimization are visualized in both the right and left panels. }
+    \caption{First, the true function has been sampled at the data points shown in the left panel. Next, a Gaussian Process is fit to the data points to approximate the true function, also shown in the left panel. With $q=2$, a fine grid of candidates is chosen in $[0,1]^{2}$ and depicted in the right panel. The vectorized MC algorithm is then used to approximate the acquisition function value at each of the candidate grid points. These approximations are made into a contour plot in the right panel. The discrete argument maximum among these approximations on the fine grid is the next size $q$ batch of points by qEI. These next points for sequential optimization are visualized in both the right and left panels. }
     \label{fig:bo_qei}
 \end{figure}
 
@@ -427,9 +441,9 @@ Here the expectation is taken with respect to the prior distribution on $\bTheta
 
 A useful quantity of interest is the posterior mean of $\bTheta$. In this example, the posterior mean is our combined solution $\bs$ which may be written as the ratio of expectations via
 $$\bs = \bbE\left[\bTheta \mid \by\right] = \frac{\bbE\left[\bTheta \prod_{i=1}^{N} \rho(y_i \mid \bS)\right]}{\bbE\left[\prod_{i=1}^{N} \rho(y_i \mid \bTheta)\right]}.$$
-As before, the expectations are taken with respect to the prior distribution on $\bTheta$. In the framework of this article $\bmu \in \bbR^{2 \times d_{\bs}}$ where for $k=1,\dots,d_{\bs}$ we have 
+As before, the expectations are taken with respect to the prior distribution on $\bTheta$. In the framework of this article $\bmu \in \bbR^{(2, d_{\bs})}$ where for $k=1,\dots,d_{\bs}$ we have 
 $$\mu_{0k} = \bbE\left[\Theta_i \prod_{i=1}^{N} \rho(y_i \mid \bTheta)\right], \qquad \mu_{1k} = \bbE\left[\prod_{i=1}^{N} \rho(y_i \mid \bTheta)\right], \qquad \text{and} \qquad s_k = \frac{\mu_{0k}}{\mu_{1k}}.$$
-While $\mu_{1k}$ is the same for all $1 \leq k \leq d_{\bs}$, we opt to keep separate denominator estimates for each coefficient. Defining $\bC^-$ and $\bC^+$ follow from vectorizing the quotient forms in Table \ref{table:elementary_ops_Cpm} while the dependency function $\bD: \tfset^{d_{\bs}} \to \tfset^{2 \times d_{\bs}}$ may be defined by stacking row vectors of combined flags such that
+While $\mu_{1k}$ is the same for all $1 \leq k \leq d_{\bs}$, we opt to keep separate denominator estimates for each coefficient. Defining $\bC^-$ and $\bC^+$ follow from vectorizing the quotient forms in Table \ref{table:elementary_ops_Cpm} while the dependency function $\bD: \tfset^{d_{\bs}} \to \tfset^{(2, d_{\bs})}$ may be defined by stacking row vectors of combined flags such that
 $$\bD\left(\bb^{(\bs)}\right) = \begin{pmatrix} \bb^{(\bs)} \\ \bb^{(\bs)} \end{pmatrix}.$$
 Maintaining only a single estimate of $\bbE\left[\prod_{i=1}^{N} \rho(y_i \mid \bTheta)\right]$ would require a different dependency function which removes economic function evaluation in favor of reduced storage. 
 
@@ -497,7 +511,7 @@ quantify the variance attributable to subsets of $u$ and subsets containing $u$ 
 \end{equation*}
 normalize the Sobol' indices to quantify the proportion of variance explained by a given subset of inputs. 
 
-Suppose one is interested in computing the closed and total sensitivity indices of $\tilde{f}$ at $u_1,\dots,u_c \subseteq 1:d$.  Then we may choose the individual solutions $\bmu \in \bbR^{2 \times 3 \times c}$ and combined solutions $\bs \in \bbR^{2 \times c}$ so that for $j=1,\dots,c$
+Suppose one is interested in computing the closed and total sensitivity indices of $\tilde{f}$ at $u_1,\dots,u_c \subseteq 1:d$.  Then we may choose the individual solutions $\bmu \in \bbR^{(2, 3, c)}$ and combined solutions $\bs \in \bbR^{(2, c)}$ so that for $j=1,\dots,c$
 \begin{equation}
 \begin{aligned}
     \mu_{11j} &= \underline{\tau}_{u_j}^2 = \int_{[0,1]^{2d}} f(\bx)[f(\bx_{u_j},\bz_{-{u_j}})-f(\bz)]\D\bx\D\bz \\
@@ -515,7 +529,7 @@ Here the notation
 \end{equation*}
 denotes a point with inputs $u$ from $\bx$ and inputs $-u=(1:d)\cap u^c$ from $\bz$. In \eqref{eq:mu_si}, $\bmu_1$ and $\bmu_2$ contain values for the closed and  total sensitivity indices respectively; $\bmu_{11}$ and $\bmu_{21}$ contain the closed and total Sobol' indices respectively; $\bmu_{i2}$ and $\bmu_{i3}$ contain first and second moments respectively for $i \in \{1,2\}$, again opting for duplicated estimates to enable more economic function evaluation. For the combined solutions, $\bs_1$ contains closed sensitivity indices while $\bs_2$ contains contains total sensitivity indices. 
 
-Bounds from individual to combined solutions may be propagated via $\bC^-,\bC^+:\bbR^{2 \times 3 \times c} \to \bbR^{2 \times c}$ defined for $i \in \{1,2\}$ and $j \in \{1,\dots,c\}$  by  
+Bounds from individual to combined solutions may be propagated via $\bC^-,\bC^+:\bbR^{(2, 3, c)} \to \bbR^{(2, c)}$ defined for $i \in \{1,2\}$ and $j \in \{1,\dots,c\}$  by  
 \begin{align*}
     C_{ij}^-(\bmu^-,\bmu^+) 
     &= \text{clip}\left(\min_{\bmu \in [\bmu^-,\bmu^+]} \frac{\mu_{i1j}}{\mu_{i3j}-\mu_{i2j}^2}\right) \\
@@ -532,14 +546,19 @@ Bounds from individual to combined solutions may be propagated via $\bC^-,\bC^+:
 \end{align*}
 where $\text{clip}(\cdot) = \min(1,\max(0,\cdot))$ restricts values between 0 and 1. Above we have used the facts that sensitivity indices are between $0$ and $1$, the variance of $\tilde{f}$ is non-negative, and Sobol' indices are non-negative. 
 
-Moreover, the dependency function $\bD:\tfset^{2 \times c} \to \tfset^{2 \times 3 \times c}$ may be defined by broadcasting shapes so that for any $(1,1,1) \leq (i,j,k) \leq (2,3,c)$ we have  $$D_{ikj}\left(\bb^{(\bs)}\right) = b_{ij}^{(\bs)}.$$
+Moreover, the dependency function $\bD:\tfset^{(2, c)} \to \tfset^{(2, 3, c)}$ may be defined by broadcasting shapes so that for any $(1,1,1) \leq (i,j,k) \leq (2,3,c)$ we have  $$D_{ikj}\left(\bb^{(\bs)}\right) = b_{ij}^{(\bs)}.$$
 In the QMCPy implementation we further generalize to allow objective functions $\tilde{\bf}: (0,1)^{d} \to \bbR^{\tilde{\bd}_{\bmu}}$ so that $\bd_{\bmu} = (2,3,c,\tilde{\bd}_{\bmu})$ and $\bd_{\bs} = (2,c,\tilde{\bd}_{\bmu})$. Here the notation of nested vectors implies, for example, that  $(2,c,(5,6)) =(2,c,5,6)$.
 
 Sensitivity indices present an important special case for computational complexity. Say our QMC algorithm takes $2^m$ total samples to accurately approximate closed and total sensitivity indices for $u_1,\dots,u_c \subseteq 1:d$. Then the computational cost is $\$(\tilde{\bf})(2+c)2^m$ since every time our sensitivity index function is evaluated at $(\bx,\bz) \in [0,1]^{2d}$ we must evaluate the users objective function at $\bx$, $\bz$, and $(\bx_{u_j},\bz_{-{u_j}})$ for $j=1,\dots,c$. Also note that when $\tilde{\bf}$ is defined to take samples in  $[0,1)^{d}$ to outcomes in $\bbR^{\tilde{\bd}_{\bmu}}$, sensitivity index approximation requires a wrapper taking samples in $[0,1)^{2d}$ to outcomes in $\bbR^{\bd_{\bmu}}$. This transform is done automatically in QMCPy as exemplified later in this section. 
 
 If a user is only interested in approximating singleton sensitivity indices, $u_j = \{j\}$ for $j=1,\dots,d$, then it is possible to reduce the cost from $\$(\tilde{\bf})(2+d)2^m$ to $\$(\tilde{\bf})2^{m+1}$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Such designs have been extended to  digital sequences in \cite{replicated_designs_sobol_seq} and utilized for sensitivity index approximation in \cite{reliable_sobol_indices_approx}. In the future, we plan to optimize QMCPy to utilize replicated designs when the opportunity arises.
 
-Recall the Ishigami function defined in \eqref{eq:ishigami}. For the Ishigami function with $a=7$, $b=0.1$ as in \cite{crestaux2007polynomial,marrel2009calculations}, Figure \ref{fig:ishigami_fu} shows exact functional ANOVA sub-functions $f_u$ for select $u \in 1:d$ and Figure \ref{fig:ishigami} shows approximate sensitivity indices. 
+Let us consider the expected value of the Ishigami function \cite{ishigami1990importance}
+\begin{equation}
+    g(\bT) = (1+bT_3^4)\sin(T_1)+a\sin^2(T_2)
+    \label{eq:ishigami}
+\end{equation}
+where $\bT \sim \calU(-\pi,\pi)^3$ and $a=7$, $b=0.1$ as in \cite{crestaux2007polynomial,marrel2009calculations}. Here a transform is made so that $s = \mu = \bbE[g(\bT)]=\bbE[f(\bX)]$ for $f(\bx) = g((2\bx-1)\pi)$ and $\bX \sim \calU(0,1)^3$.  Figure \ref{fig:ishigami_fu} shows exact functional ANOVA sub-functions $f_u$ for select $u \in 1:d$ while Figure \ref{fig:ishigami} shows approximate sensitivity indices.
 
 \begin{figure}[H]
     \centering
@@ -551,7 +570,7 @@ Recall the Ishigami function defined in \eqref{eq:ishigami}. For the Ishigami fu
 \begin{figure}[H]
     \centering
     \includegraphics[width=.8\textwidth]{figs/ishigami.pdf}
-    \caption{Approximate closed and total sensitivity indices for the Ishigami function illustrating the relationship $\underline{s}_u + \overline{s}_{u^c} = 1$ all $u \subseteq 1:d$. In each row the \AGSNote{cyan} bar corresponds to a closed sensitivity index extended to the right from $0$ while the \AGSNote{magenta} bar corresponds a total sensitivity index extended to the left from $1$. The bars should meet at the \AGSNote{red} line for the  analytic solution $1-\underline{s}_u=1-\overline{s}_{u^c}$. The \AGSNote{cyan}, \AGSNote{magenta} horizontal lines depict the error bounds for the closed, total sensitivity indices respectively. The \AGSNote{red} line crossing the \AGSNote{cyan} and \AGSNote{magenta} lines in each row indicates the true solution is indeed captured in the error bounds as desired.}
+    \caption{Approximate closed and total sensitivity indices for the Ishigami function illustrating the relationship $\underline{s}_u + \overline{s}_{u^c} = 1$ all $u \subseteq 1:d$. In each row the closed sensitivity index bar is  extended to the right from $0$ while the total sensitivity index bar is extended to the left from $1$. The bars should meet at the dark vertical line for the  analytic solution $\underline{s}_u=1-\overline{s}_{u^c}$. The darker,lighter horizontal lines within each row depict the error bounds for the closed, total sensitivity indices respectively. The vertical line crossing both horizontal lines in each row indicates the true solution is indeed captured in the error bounds as desired.}
     \label{fig:ishigami}
 \end{figure}
 
@@ -594,18 +613,15 @@ Then when you add inline comments or comments below we know who made the suggest
 \subsection*{Article}
 
 \begin{itemize}
-    \item \AGSNote{Replace notation like $\bbR^{2 \times 3}$ with more consistent notation $\bbR^{(2,3)}$}
-    \item \AGSNote{change first Ishigami example to Cantilever Beam Functions from \url{https://www.sfu.ca/~ssurjano/canti.html}}
+    \item 
 \end{itemize}
 
 \subsection*{Code}
 
 \begin{itemize}
-    \item \AGSNote{Change figures to black and white}
-    \item \AGSNote{Figure \ref{fig:nn_si} xticklabels feature names instead of indices}
-    \item \AGSNote{Allow QMCPy to construct a true measure from a list of 1d measures acting as independent independent marginals. Allow QMCPy to construct a true measure from an  ndarray of true measures each corresponds to one of the vector functions.} 
     \item \AGSNote{\texttt{CubBayes} algorithms allow ndarray of \texttt{abs\_tol} and \texttt{rel\_tol} and \texttt{error\_fun}}
     \item \AGSNote{New PyPI release}
+    \item \AGSNote{update citation for demo reproducing figures in this article}
 \end{itemize}
 
 \end{document}
