@@ -68,7 +68,8 @@
 \newcommand{\varepsrel}{\varepsilon_\text{rel}}
 
 \newcommand{\JRComment}[1]{{\color{violet}#1}}
-\newcommand{\FJHComment}[1]{{\color{purple}#1}}
+\newcommand{\FJHComment}[1]{{\color{purple}Fred:  #1}}
+\newcommand{\CDHJComment}[1]{{\color{royal blue}#1}}
 
 \DeclareMathOperator{\Order}{{\mathcal O}}
 
@@ -83,7 +84,7 @@
 \maketitle
 
 \begin{abstract}
-Monte Carlo methods present an efficient approach for approximating the expected value of a random variable. Algorithms exist to adaptively sample the random variable until a user defined error tolerance is satisfied with high probability. This work describes an extension of such methods which supports adaptive sampling to satisfy error criteria for vector functions of multiple expectations. Although several functions involving multiple expectations are being evaluated, only one random sequence is required, albeit sometimes of larger dimension than the underlying randomness. These enhanced Monte Carlo and Quasi-Monte Carlo algorithms are implemented in the QMCPy Python package with support for vectorized, economical, and parallel function evaluation. We exemplify these capabilities on problems from machine learning and global sensitivity analysis.
+Monte Carlo methods present an efficient approach for approximating the expected value of a random variable. Algorithms exist to adaptively sample the random variable until a user defined error tolerance is satisfied with high probability. This work describes an extension of such methods, which supports adaptive sampling to satisfy error criteria for vector functions of multiple expectations. Although several functions involving multiple expectations are being evaluated, only one random sequence is required, albeit sometimes of larger dimension than the underlying randomness. These enhanced Monte Carlo and Quasi-Monte Carlo algorithms are implemented in the QMCPy Python package with support for vectorized, economical, and parallel function evaluation. We exemplify these capabilities on problems from machine learning and global sensitivity analysis.
 \end{abstract}
 
 \tableofcontents
@@ -92,7 +93,14 @@ Monte Carlo methods present an efficient approach for approximating the expected
 
 \section{Introduction}
 
-Theoretical developments, stopping criteria, and implementations of Monte Carlo (MC) methods often focus on approximating a scalar expectation $\mu = \bbE[f(\bX)]$ where $\bX \sim \calU[0,1)^d$ encapsulates the randomness of a simulation $f: [0,1)^d \to \bbR$. However, many quantities of interest $\bs \in \bbR^{\bd_{\bs}}$, which we call \emph{combined solutions}, may be formulated as functions of expectations $\bmu = \bbE[\bf(\bX)] \in \bbR^{\bd_{\bmu}}$, which we call \emph{individual solutions}. Now the simulation $\bf: [0,1)^{d} \to \bbR^{\bd_{\bmu}}$ produces a multi-dimensional array with vector shape $\bd_{\bmu}$ while $\bX \sim \calU[0,1)^d$ as in the scalar function setting. The multi-dimensional array of combined solutions is produced from the multi-dimensional array of individual solutions via a \emph{combining function} $\bC: \bbR^{\bd_{\bmu}} \to \bbR^{\bd_{\bs}}$ so that 
+\FJHComment{You may want to start importing this into the conference proceedings styles so that you can adapt to them sooner rather than later.
+
+To cut down on the number of pages, you may want to refer readers to a demo of your code on the QMCPy website.  The editors may have trouble compiling the LaTeX of the book with your source code listings definitions.
+
+%It is better not to have just one subsubsection of a subsection.
+}
+
+Theoretical developments, stopping criteria, and implementations of Monte Carlo (MC) methods often focus on approximating a scalar expectation $\mu = \bbE[f(\bX)]$, where $\bX \sim \calU[0,1)^d$ encapsulates the randomness of a simulation $f: [0,1)^d \to \bbR$. However, many quantities of interest $\bs \in \bbR^{\bd_{\bs}}$, which we call \emph{combined solutions}, may be formulated as functions of expectations $\bmu = \bbE[\bf(\bX)] \in \bbR^{\bd_{\bmu}}$, which we call \emph{individual solutions}. Now the simulation $\bf: [0,1)^{d} \to \bbR^{\bd_{\bmu}}$ produces a multi-dimensional array with vector shape $\bd_{\bmu}$ while $\bX \sim \calU[0,1)^d$ as in the scalar function setting. The multi-dimensional array of combined solutions is produced from the multi-dimensional array of individual solutions via a \emph{combining function} $\bC: \bbR^{\bd_{\bmu}} \to \bbR^{\bd_{\bs}}$ so that 
 \begin{equation}
     \bs = \bC(\bmu).
     \label{eq:comb_from_indv}
@@ -107,13 +115,15 @@ These examples are further detailed in Section \ref{sec:examples}.
 
 This article generalizes \cite{adaptive_qmc} to develop Algorithm \ref{algo:MCStoppingCriterion}, an efficient and adaptive method for approximating combined solutions $\bs$ to within a user-specified error tolerance and uncertainty threshold. The algorithm utilizes existing MC  methods that, given an appropriate set of sampling nodes and their corresponding function evaluations, produce error bounds on individual solutions that hold with a desired confidence. Examples of scalar-bounding MC methods include \cite{cubmcg,cubqmclattice,cubqmcsobol,cubqmcbayes_thesis,cubqmcbayeslattice} with robust implementations in the GAIL MATLAB library \cite{GAIL}. Interval arithmetic is used to propagate these individual solution bounds to bounds on the combined solutions which can be used both to test if the error criterion has been met and determine optimal combined solution approximations. 
 
+\JRComment{Please mention any prior work in vectorized Monte Carlo}
+
 The resulting vectorized MC algorithms for combined solutions are implemented into the open source QMCPy Python package \cite{QMCPy} which is distributed on both GitHub and PyPI. The implementations incorporate shared samples, multi-dimensional vectorization, parallel computation, and economical function evaluation to enable fast, efficient approximations. Section \ref{sec:examples} also provides use cases in QMCPy with all examples being fully reproducible in \AGSNote{cite \url{https://github.com/QMCSoftware/QMCSoftware/blob/mc_vec/demos/vectorized_qmc.ipynb}}.
 
 The remainder of the article is organized as follows. Section \ref{sec:MCM} provides a brief overview of scalar MC including both Crude and Quasi-MC methods. More detailed accounts of this mature field are available in \cite{niederreiter1992random,mcbook}. Section \ref{sec:Existing_QMC_Methods} outlines various MC methods for determining error bounds on a scalar individual solution. Section \ref{sec:comb_sol_approx} determines how to set uncertainty levels for individual bounds based on a desired uncertainty for a scalar combined solution and how to propagated bounds from individual to combined solutions using interval arithmetic \cite{interval_analysis}. Section \ref{sec:opt_comb_sol_sc} derives a stopping criterion and optimal approximation for a scalar combined solution based on a user-specified uncertainty threshold and error metric map. Vectorization to a multi-dimensional array of combined solutions is described Section \ref{sec: Vectorized Implementation} with special care taken to enable economical function evaluation. This section also details Algorithm \ref{algo:MCStoppingCriterion} which provides a framework for extending existing MC methods to accommodate approximating multi-dimensional arrays of combined solutions. Section \ref{sec:examples} presents examples from machine learning and global sensitivity analysis utilizing our implementation in QMCPy. We conclude with a brief summary in Section \ref{sec:conclusions}.   
 
 \section{Scalar Monte Carlo Methods} \label{sec:MCM}
 
-As mentioned previously, MC methods are well-suited to approximate a scalar expectation $\mu = \bbE[f(\bX)]$ where $\bX \sim \calU[0,1)^d$ contains the randomness of a simulation $f: [0,1)^{d} \to \bbR$. While the standard uniform choice for $\bX$ may seem restrictive, a variety of random variables are compatible in this framework after an appropriate transformation. For example, if $\mu = \bbE[g(\bT)]$ for $\bT \sim \calN(\boldsymbol{m},\boldsymbol{\Sigma})$ and some $g: \bbR^{d} \to \bbR$, then $\mu = \bbE[f(\bX)]$ for  $f(\bx)=g(\boldsymbol{A}\Phi^{-1}(\bx)+\boldsymbol{m})$ where $\boldsymbol{\Sigma}=\boldsymbol{A}\boldsymbol{A}^T$ and $\Phi^{-1}$ is the inverse CDF of a standard normal distribution acting element wise. More details on such variable transformations can be found in \cite{QMCSoftware} along with examples of how to utilize the default transforms available in QMCPy.
+As mentioned previously, MC methods are well-suited to approximate a scalar expectation $\mu = \bbE[f(\bX)]$ where $\bX \sim \calU[0,1)^d$ contains the randomness of a simulation $f: [0,1)^{d} \to \bbR$. While the standard uniform choice for $\bX$ may seem restrictive, a variety of random variables are compatible in this framework after an appropriate transformation. For example, if $\mu = \bbE[g(\bT)]$ for $\bT \sim \calN(\boldsymbol{m},\boldsymbol{\Sigma})$ and some $g: \bbR^{d} \to \bbR$, then $\mu = \bbE[f(\bX)]$ for  $f(\bx)=g(\boldsymbol{A}\Phi^{-1}(\bx)+\boldsymbol{m})$ where $\boldsymbol{\Sigma}=\boldsymbol{A}\boldsymbol{A}^T$ and $\Phi^{-1}$ \FJHComment{You may want $\boldsymbol{\Phi}^{-1}$ since it is a vector-valued function.} is the inverse CDF of a standard normal distribution acting element wise. More details on such variable transformations can be found in \cite{QMCSoftware} along with examples of how to utilize the default transforms available in QMCPy.
 
 MC methods often approximate $\mu$ by the sample average of $f$ evaluated at some nodes $\bx_1,\dots,\bx_n \in [0,1)^d$. We denote this approximation by  
 \begin{equation}
@@ -122,10 +132,10 @@ MC methods often approximate $\mu$ by the sample average of $f$ evaluated at som
 \end{equation}
 \emph{Crude Monte Carlo} (CMC) methods choose the sampling nodes to be independent and identically distributed (IID), that is $\bx_1,\dots,\bx_n \simiid \calU[0,1)^{d}$. For CMC, the absolute approximation error $\lvert \mu - \hat{\mu} \rvert$ is $\calO(n^{-1/2})$. 
 
-\emph{Quasi-Monte Carlo} (QMC) methods choose the sampling nodes in a dependent manner to avoid the gaps and clusters observed in IID nodes. Discrepancy measures quantify how close the empirical distribution of $\{\bx_i\}_{i=1}^n$ is to the standard uniform distribution. The Koksma-Hlawka inequality bounds the absolute approximation error by the star discrepancy of $\{\bx_i\}_{i=1}^n$ times the variation of $f$ in the sense of Hardy and Krause \cite{dick2013high}. Other discrepancy-variation pairings are also available, see \cite{hickernell1998generalized} for an overview. While is is often impractical to determine if $f$ has bounded variation, such inequalities indicate that using low discrepancy (LD) sequences in place of IID sequences can boost performance for nicely behaved $f$. A number of LD sequences exist that achieve a discrepancy of $\calO(n^{-1+\delta})$ for any $\delta > 0$. These LD sequences backbone QMC methods. When $f$ has bounded variation, this rate upper bounds the absolute error of QMC methods making them significantly faster than CMC methods. Oftentimes, even if $f$ has infinite variation, QMC methods will still outperform CMC methods despite a lack of theoretical justification. 
+\emph{Quasi-Monte Carlo} (QMC) methods choose the sampling nodes in a dependent manner to avoid the gaps and clusters observed in IID nodes. Discrepancy measures quantify how close the empirical distribution of $\{\bx_i\}_{i=1}^n$ is to the standard uniform distribution. The Koksma-Hlawka inequality bounds the absolute approximation error by the star discrepancy of $\{\bx_i\}_{i=1}^n$ times the variation of $f$ in the sense of Hardy and Krause \cite{dick2013high}. Other discrepancy-variation pairings are also available, see \cite{hickernell1998generalized} for an overview. While it is often impractical to determine if $f$ has bounded variation, such inequalities indicate that using low discrepancy (LD) sequences in place of IID sequences can boost performance for nicely behaved $f$. A number of LD sequences exist that achieve a discrepancy of $\calO(n^{-1+\delta})$ for any $\delta > 0$. These LD sequences are the backbone QMC methods. When $f$ has bounded variation, this rate upper bounds the absolute error of QMC methods making them significantly faster than CMC methods. Oftentimes, even if $f$ has infinite variation, QMC methods will still outperform CMC methods despite a lack of theoretical justification. 
 
 
-The QMC methods in this article utilize randomized LD sequences that are extensible in both dimension and number of samples without sacrificing the $\calO(n^{-1+\delta})$ discrepancy rate. Randomization ensures, with probability $1$, that $\bx_1,\dots,\bx_n \in (0,1)^d$ and that the LD sequences does not badly match the integrand. Extensiblity enables algorithms to adaptively increase the number of points used to estimate $\hat{\mu}$ without needing to discard previous function evaluations. Digital sequences and integration lattices are two popular choices for LD sequences. Constructions exist for both that support randomization and extensible designs. Figure \ref{fig:ld_seqs} contrasts IID points with LD sequences implemented in base $2$ as is often done for computational efficiently.
+The QMC methods in this article utilize randomized LD sequences that are extensible in both dimension and number of samples without sacrificing the $\calO(n^{-1+\delta})$ discrepancy rate. Randomization ensures, with probability $1$, that $\bx_1,\dots,\bx_n \in (0,1)^d$ and that the LD sequence does not badly match the integrand. Extensiblity enables algorithms to adaptively increase the number of points used to estimate $\hat{\mu}$ without needing to discard previous function evaluations. Digital sequences and integration lattices are two popular choices for LD sequences. Constructions exist for both that support randomization and extensible designs. Figure \ref{fig:ld_seqs} contrasts IID points with LD sequences implemented in base $2$ as is often done for computational efficiently.
 
 \begin{figure}[H]
     \centering
@@ -159,6 +169,7 @@ The QMC methods in this article utilize randomized LD sequences that are extensi
 This section discusses some existing CMC and QMC methods for approximating error bounds on the scalar individual solution $\mu$. Specifically, given $n$ samples $\bx_1,\dots,\bx_n$ and corresponding function evaluations $f(\bx_1),\dots,f(\bx_n)$, we discuss methods for determining lower bound $\mu^-$ and upper bound $\mu^+$ so that $\mu \in [\mu^-,\mu^+]$ with probability greater than or equal to some desired threshold $1-\alpha^{(\mu)}$. Table \ref{table:qmcpy_sc} compares the error bounding methods discussed in the remainder of this section.
 
 \begin{table}[H]
+\centering
 \begin{tabular}{r c c c c c c}
     QMCPy Class Name & MC Type & Point Sets & Error Bounds \\
     \hline
@@ -196,6 +207,8 @@ This section discusses some existing CMC and QMC methods for approximating error
     %Similar to \texttt{CubQMC\{Net,Lattice\}G}, Fourier and Walsh transform coefficients are used respectively with Lattice and digital nets. But the coefficients are used to estimate credible intervals. Thus it provides much stronger theoretical background. These algorithms need to estimate shape and scale parameters to parameterize the covariance kernels, which are to be searched using optimization techniques, leading to greater computational cost. 
 \end{description}
 
+\JRComment{Is there any default recommendation if the user does not have any knowledge about the integrand?}
+
 We first recommend using the  \texttt{CubQMC\{Net,Lattice\}G} QMC algorithms if the function's Fourier coefficients are expected to be well behaved and the function has low evaluation cost. For functions with larger evaluation cost and low dimension, we recommend using  \texttt{CubQMCBayes\{Net,Lattice\}G}. While these algorithms require additional overhead for optimizing Gaussian Process hyperparameters, they tend to be more sample efficient than \texttt{CubQMC\{Net,Lattice\}G}. \texttt{CubQMCRep} accommodates a larger class of functions compared to the other QMC algorithms with the drawback of providing heuristic bounds and often requiring more samples to achieve the same error. If QMC is not suitable for the problem, \texttt{CubMCCLT} may be used, again with the caution of producing heuristic bounds which lack theoretical justification.
 
 Digital nets may generally be preferred to lattice point sets as the later often requires the function be periodic. While periodizing transforms are available to any function, such transforms may destroy smoothness properties previously enjoyed by the function. See \cite[Chapter 16]{mcbook} for more details on periodizing transforms for lattice rules.
@@ -211,17 +224,21 @@ Digital nets may generally be preferred to lattice point sets as the later often
 
 \section{Individual Uncertainties and Bound Propagation for a Scalar Combined Solution} \label{sec:comb_sol_approx}
 
+\FJHComment{It would help to have a connecting sentence or two at the start and/or end of each section to tell the reader where you are going next.  E.g., In this section, we connect errors in individual solutions to errors in combined solutions.}
+
 The MC and QMC algorithms in the previous section may be vectorized in a straightforward manner to attain error bounds $[\bmu^-,\bmu^+]$ on a multi-dimensional array of individual solutions $\bmu \in \bbR^{\bd_{\bmu}}$ so that 
 \begin{equation}
-    P(\mu_{\bk} \in [\mu_{\bk}^-,\mu_{\bk}^+]) \geq 1-\alpha_{\bk}^{(\bmu)},  \qquad 
+    P(\mu_{\bk} \in [\mu_{\bk}^-,\mu_{\bk}^+]) \geq 1-\alpha_{\bk}^{(\bmu)}  \qquad \text{for any multi-index }\boldsymbol{1} \leq \bk \leq \bd_{\bmu}.
     \label{eq:indv_prob_bounds}
 \end{equation}
-for any multi-index $\boldsymbol{1} \leq \bk \leq \bd_{\bmu}$. Here $\balpha^{(\bmu)} \in (0,1)^{\bd_{\bmu}}$ is a multi-dimensional array of individual uncertainty levels which are set to 
+%for any multi-index $\boldsymbol{1} \leq \bk \leq \bd_{\bmu}$. 
+Here $\balpha^{(\bmu)} \in (0,1)^{\bd_{\bmu}}$ is a multi-dimensional array of individual uncertainty levels which are set to 
 \begin{equation}
     \alpha_{\bk}^{(\bmu)} = \frac{\alpha^{(s)}}{\prod(\bd_{\bmu})}
-    \label{eq:alpha_mu_from_alpha_s}
+    \label{eq:alpha_mu_from_alpha_s} \qquad \text{for all }\boldsymbol{1} \leq \bk \leq \bd_{\bmu}.
 \end{equation}
-for all $\boldsymbol{1} \leq \bk \leq \bd_{\bmu}$. In the above, $\prod(\bd_{\bmu})$ is the number of elements in a $\bbR^{\bd_{\bmu}}$ array and $\alpha^{(s)} \in (0,1)$ is the desired uncertainty for the bounds $[s^-,s^+]$ on the scalar combined solution $s$. In this setting, Boole's inequality \cite{boole1847mathematical} implies that whenever \eqref{eq:indv_prob_bounds} holds we have
+%for all $\boldsymbol{1} \leq \bk \leq \bd_{\bmu}$. 
+In the above, $\prod(\bd_{\bmu})$ is the number of elements in a $\bbR^{\bd_{\bmu}}$ array [ \JRComment{which array is referred here?}] and $\alpha^{(s)} \in (0,1)$ is the desired uncertainty for the bounds $[s^-,s^+]$ on the scalar combined solution $s$. In this setting, Boole's inequality \cite{boole1847mathematical} implies that whenever \eqref{eq:indv_prob_bounds} holds we have
 \begin{equation}
     P(\bmu \in [\bmu^-,\bmu^+]) \geq 1-\alpha^{(s)}.
     \label{eq:indv_prob_bounds_all}
@@ -235,7 +252,7 @@ Recall from \eqref{eq:comb_from_indv} that $s = C(\bmu)$ where, in this case, $C
     \end{aligned}
     \label{eq:C_minus_C_plus}
 \end{equation}
-Table \ref{table:elementary_ops_Cpm} provides examples of such interval arithmetic functions for some basic operations. Finally, under settings \eqref{eq:alpha_mu_from_alpha_s} and \eqref{eq:C_minus_C_plus} we have that  \eqref{eq:indv_prob_bounds} implies \eqref{eq:indv_prob_bounds_all} implies
+Table \ref{table:elementary_ops_Cpm} provides examples of such interval arithmetic functions for some basic operations. \JRComment{The next line is not clear:} Finally, under settings \FJHComment{assumptions?} \eqref{eq:alpha_mu_from_alpha_s} and \eqref{eq:C_minus_C_plus} we have that  \eqref{eq:indv_prob_bounds} implies \eqref{eq:indv_prob_bounds_all} implies
 $$\qquad  P(s \in [s^-,s^+]) \geq 1-\alpha^{(s)}$$
 as desired.
 
@@ -265,30 +282,32 @@ Let $h^{(\varepsilon)}: \bbR \to \bbR^+$ be an error metric dependent on some er
 Theorem \ref{thm:shat_opt} below determines an optimal $\hat{s}$ and an equivalent condition to \eqref{eq:sc_raw} when $h^{(\varepsilon)}$ is metric map i.e Lipschitz continuous with constant less than or equal to $1$. Compatible error metric options include
 \begin{subequations}
 \begin{align}
-    h(s,\varepsilon) & = \varepsilon \quad &&\text{absolute error satisfied}, \label{eq:h_abs}\\
-    h(s,\varepsilon) & = \lvert s \rvert \varepsrel \quad &&\text{relative error satisfied}, \label{eq:h_rel}\\
-    h(s,\varepsilon) &= \max\left(\varepsabs,\lvert s \rvert \varepsrel \right) \quad &&\text{absolute or relative error satisfied, and } \label{eq:h_abs_or_rel} \\
-    h(s,\varepsilon) &= \min\left(\varepsabs,\lvert s \rvert \varepsrel \right) \quad &&\text{absolute and relative error satisfied.} \label{eq:h_abs_and_rel}
+    h^{(\varepsilon)}(s) & = \varepsilon \quad &&\text{absolute error satisfied}, \label{eq:h_abs}\\
+    h^{(\varepsilon)}(s) & = \lvert s \rvert \varepsrel \quad &&\text{relative error satisfied}, \label{eq:h_rel}\\
+    h^{(\varepsilon)}(s) &= \max\left(\varepsabs,\lvert s \rvert \varepsrel \right) \quad &&\text{absolute or relative error satisfied, and } \label{eq:h_abs_or_rel} \\
+    h^{(\varepsilon)}(s) &= \min\left(\varepsabs,\lvert s \rvert \varepsrel \right) \quad &&\text{absolute and relative error satisfied.} \label{eq:h_abs_and_rel}
 \end{align}
 \end{subequations}
-
 \begin{theorem} \label{thm:shat_opt}
-    If $h^{(\varepsilon)}$ satisfies
-    $$\lvert h^{(\varepsilon)}(s_1) - h^{(\varepsilon)}(s_2) \rvert \leq \lvert s_1 - s_2 \rvert$$
-    for any $s_1,s_2 \in \bbR$, then  \eqref{eq:sc_raw} holds if and only if 
+    Suppose that  $h^{(\varepsilon)}$ satisfies the metric map condition
+    $$\lvert h^{(\varepsilon)}(s_1) - h^{(\varepsilon)}(s_2) \rvert \leq \lvert s_1 - s_2 \rvert \qquad \text{for all } s_1,s_2 \in \bbR.$$
+    Then error criterion  \eqref{eq:sc_raw} holds if and only if 
     \begin{equation}
-        s^+-s^- \leq h^{(\varepsilon)}(s^-)+h^{(\varepsilon)}(s^+)
+        s^+-s^- \leq h^{(\varepsilon)}(s^-)+h^{(\varepsilon)}(s^+).
         \label{eq:sc}
     \end{equation}
-    for
+    Furthermore, the choice of 
     \begin{equation}
         \hat{s} = \frac{1}{2}\left[s^-+s^++h^{(\varepsilon)}(s^-)-h^{(\varepsilon)}(s^+)\right].
         \label{eq:shat_opt}
     \end{equation}
+    minimizes $\max_{s \in [s^-,s^+]} \lvert s - \hat{s} \rvert -h^{(\varepsilon)}(s)$ for any choice of $s^{\pm}$ with $s^- < s^+$.
 \end{theorem}
 
 \begin{proof}
-    Define $g(s,\hat{s})=\lvert s - \hat{s} \rvert -h^{(\varepsilon)}(s)$. For $s \in [s^-,s^+]$, if $s^- \leq s \leq \hat{s}$ then 
+    Define $g(s,\hat{s})=\lvert s - \hat{s} \rvert -h^{(\varepsilon)}(s)$. We first establish that the maximum of $g(\cdot,\hat{s})$ over $[s^-,s^+]$ occurs at the boundaries for any real $\hat{s}$.  
+    
+    If  $s^- \leq s \leq \hat{s}$ it follows that 
     $$g(s^-,\hat{s})-g(s,\hat{s}) = \lvert s^- - \hat{s} \rvert -h^{(\varepsilon)}(s^-) - \lvert s - \hat{s} \rvert  + h^{(\varepsilon)}(s) \geq s - s^- - \lvert h^{(\varepsilon)}(s)-h^{(\varepsilon)}(s^-) \rvert \geq 0,$$
     and if $\hat{s} \leq s \leq s^+$ then 
     $$g(s^+,\hat{s})-g(s,\hat{s}) = \lvert s^+ - \hat{s} \rvert -h^{(\varepsilon)}(s^+) - \lvert s - \hat{s} \rvert  + h^{(\varepsilon)}(s) \geq s^+ - s - \lvert h^{(\varepsilon)}(s)-h^{(\varepsilon)}(s^+) \rvert \geq 0.$$
@@ -296,11 +315,14 @@ Theorem \ref{thm:shat_opt} below determines an optimal $\hat{s}$ and an equivale
     \begin{equation*}
         \max_{s \in [s^-,s^+]} g(s,\hat{s}) = \max_{s \in \{s^-,s^+\}} g(s,\hat{s}).
     \end{equation*}
-    The function $g(s^-,\cdot)$ is monotonically decreasing for $\hat{s} < s^-$ and monotonically increasing for $\hat{s} > s^-$. Similarly, $g(s^+,\cdot)$ is monotonically decreasing for $\hat{s} < s^+$ and monotonically increasing for $\hat{s} > s^+$. This means that the optimal choice of $\hat{s}$ to minimize $\max_{s \in \{s^-,s^+\}} g(s,\hat{s})$ lies in $[s^-,s^+]$ and satisfies $g(s^-,\hat{s}) = g(s^+,\hat{s})$ so that 
+    
+    Next, we find the optimal choice of $\hat{s}$.  The function $g(s^-,\cdot)$ is monotonically decreasing to the left of  $s^-$ and monotonically increasing to the right of $s^-$. Similarly, $g(s^+,\cdot)$ is monotonically decreasing to the left of $s^+$ and monotonically increasing to the right of $s^+$. This means that the optimal choice of $\hat{s}$ to minimize $\max_{s \in \{s^-,s^+\}} g(s,\hat{s})$ lies in $[s^-,s^+]$ and satisfies $g(s^-,\hat{s}) = g(s^+,\hat{s})$, that is, 
     $$\hat{s} - s^- - h^{(\varepsilon)}(s^-) = s^+ - \hat{s} - h^{(\varepsilon)}(s^+).$$
-    Solving for $\hat{s}$ gives \eqref{eq:shat_opt} under which 
-    $$2 \max_{s \in [s^-,s^+]} g(s,\hat{s}) =  s^+  -  s^-  - h^{(\varepsilon)}(s^-) - h^{(\varepsilon)}(s^+)$$
-    and \eqref{eq:sc} follows. 
+    Solving for the optimal value of $\hat{s}$ leads to \eqref{eq:shat_opt}.
+    
+    For this optimal $\hat{s}$, 
+    $$2 \max_{s \in [s^-,s^+]} g(s,\hat{s}) =  s^+  -  s^-  - h^{(\varepsilon)}(s^-) - h^{(\varepsilon)}(s^+).$$
+    The error criterion is equivalent to $\max_{s \in [s^-,s^+]} g(s,\hat{s}) \le 0 $.  This can only hold under condition  \eqref{eq:sc}. 
 \end{proof}
 
 \section{MC Algorithm for Multi-Dimensional Combined Solutions} \label{sec: Vectorized Implementation}
@@ -365,13 +387,13 @@ The four main abstract classes in QMCPy are the
 \end{itemize}
 Each MC problem must instantiate a subclass of each of the four abstract classes in a nested fashion. 
 
-As a simple example, let us compute the expected displacement and stress on a cantilever bream as defined in \cite{ simulationlib_cantilever}: 
+As a simple example, let us compute the expected displacement and stress on a cantilever beam as defined in \cite{ simulationlib_cantilever}: 
 \begin{align*}
     D(T_1,T_2,T_3) &= \frac{4l^3}{T_1 w t} \sqrt{\frac{T_2^2}{t^4} + \frac{T_3^2}{w^4}} \\ 
     S(T_1,T_2,T_3) &= 600\left(\frac{T_2}{wt^2} + \frac{T_3}{w^2t}\right).
-    \label{eq:cantilever_bream}
+    \label{eq:cantilever_beam}
 \end{align*}
-Here $l=100$, $w=4$, $t=2$ are constants and $T_1$, $T_2$, $T_3$ are independent Gaussian random variables with mean and standard deviation as defined as in the Table below.
+Here $l=100$, $w=4$, $t=2$ are constants and $T_1$, $T_2$, $T_3$ are independent Gaussian random variables with mean and standard deviation as defined as in the Table \ref{tab:cantilever_beam} below.
 \begin{table}[H]
     \centering
     \begin{tabular}{r c c l}
@@ -381,10 +403,10 @@ Here $l=100$, $w=4$, $t=2$ are constants and $T_1$, $T_2$, $T_3$ are independent
         $T_2$ & $500$ & $100$ & horizontal load on beam \\
         $T_3$ & $1000$ & $100$ & vertical load on beam
     \end{tabular}
-    \caption{}
-    \label{tab:cantilever_bream}
+    \caption{Variable descriptions for the cantilever beam function.}
+    \label{tab:cantilever_beam}
 \end{table}
-Listing \ref{py:simpleex} uses QMCPy to approximates $s_1 = \mu_1 = \bbE[D(\bT)]$ and $s_2 = \mu_2 = \bbE[S(\bT)]$ where the identity functions for $\bC^-$, $\bC^+$, and $\bD$ are defaulted to. Notice that \texttt{CustomFun} is constructed with $g$, a function of the true measure $\bT$, rather than $f$, a function of MC compatible $\bX$. The variable transform taking $g$ to $f$ is performed automatically by QMCPy without explicit specification from the user. Here the absolute or relative error metric \eqref{eq:h_abs_or_rel} is defaulted to.
+Listing \ref{py:simpleex} uses QMCPy to approximates $s_1 = \mu_1 = \bbE[D(\bT)]$ and $s_2 = \mu_2 = \bbE[S(\bT)]$ where the identity functions for $\bC^-$, $\bC^+$, and $\bD$ are defaulted to. Notice that \texttt{CustomFun} is constructed with $g$, a function of the true measure $\bT$, rather than $f$, a function of MC compatible $\bX$ \FJHComment{I do not understand what his means.}. The variable transform taking $g$ to $f$ is performed automatically by QMCPy without explicit specification from the user. Here the absolute or relative error metric \eqref{eq:h_abs_or_rel} is defaulted to.
 \lstinputlisting[caption={Simple QMCPy Example},style=Python,label={py:simpleex}]{python/simple_ex.txt}
 For more details on the QMCPy framework see \cite{QMCSoftware}.
 
@@ -553,6 +575,8 @@ Sensitivity indices present an important special case for computational complexi
 
 If a user is only interested in approximating singleton sensitivity indices, $u_j = \{j\}$ for $j=1,\dots,d$, then it is possible to reduce the cost from $\$(\tilde{\bf})(2+d)2^m$ to $\$(\tilde{\bf})2^{m+1}$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Such designs have been extended to  digital sequences in \cite{replicated_designs_sobol_seq} and utilized for sensitivity index approximation in \cite{reliable_sobol_indices_approx}. In the future, we plan to optimize QMCPy to utilize replicated designs when the opportunity arises.
 
+\subsubsection{Ishigami Function}
+
 Let us consider the expected value of the Ishigami function \cite{ishigami1990importance}
 \begin{equation}
     g(\bT) = (1+bT_3^4)\sin(T_1)+a\sin^2(T_2)
@@ -574,7 +598,7 @@ where $\bT \sim \calU(-\pi,\pi)^3$ and $a=7$, $b=0.1$ as in \cite{crestaux2007po
     \label{fig:ishigami}
 \end{figure}
 
-\subsubsection{Neural Network Classifier for Iris Dataset}
+\subsubsection{Neural Network Classifier of Iris Species}
 
 In this example we compute sensitivity indices of a neural network classifier for the Iris dataset retrieved from the UCI Machine Learning Repository \cite{uci_ml_repo}. This example was inspired by a similar approximation in \cite{hoyt2021efficient}. The Iris dataset consists of input features
 \begin{itemize}
@@ -613,7 +637,7 @@ Then when you add inline comments or comments below we know who made the suggest
 \subsection*{Article}
 
 \begin{itemize}
-    \item 
+    \item Remove "Listing ..." name for code we don't reference in the text 
 \end{itemize}
 
 \subsection*{Code}
