@@ -3,11 +3,13 @@ yhat = mlpc.predict(xv)
 print("accuracy: %.1f%%"%(100*(yv==yhat).mean()))
 # accuracy: 98.0%
 sampler = qp.DigitalNetB2(4,seed=7)
-true_measure =  qp.Uniform(sampler,lower_bound=xt.min(0),upper_bound=xt.max(0))
+true_measure =  qp.Uniform(sampler,
+    lower_bound = xt.min(0),
+    upper_bound = xt.max(0))
 fun = qp.CustomFun(
     true_measure = true_measure,
     g = lambda x,compute_flags: mlpc.predict_proba(x),
-    rho = (3,))
+    rho = 3)
 si_fun = qp.SensitivityIndices(fun,indices="all")
-qmc_algo = qp.CubQMCNetG(si_fun,abs_tol = .005)
+qmc_algo = qp.CubQMCNetG(si_fun,abs_tol=.005)
 nn_sis,nn_sis_data = qmc_algo.integrate()
