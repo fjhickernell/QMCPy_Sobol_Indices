@@ -33,6 +33,7 @@
 \newcommand{\FJHComment}[1]{{\color{purple}Fred:  #1}}
 \newcommand{\CDHJComment}[1]{{\color{royal blue}#1}}
 \usepackage{biblatex}
+\addbibresource{ags.bib}
 \addbibresource{main.bib}
 
 \begin{document}
@@ -55,7 +56,11 @@ Monte Carlo methods present an efficient approach for approximating the expected
 
 \section{Introduction}
 
-Theoretical developments, stopping criteria, and implementations of Monte Carlo (MC) methods often focus on approximating a scalar expectation $\mu = \mathbb{E}[f(\boldsymbol{X})]$, where $\boldsymbol{X} \sim \mathcal{U}[0,1)^d$ encapsulates the randomness of a simulation $f: [0,1)^d \to \mathbb{R}$. However, many quantities of interest $\boldsymbol{s} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$, which we call \emph{combined solutions}, may be formulated as functions of expectations $\boldsymbol{\mu} = \mathbb{E}[\boldsymbol{f}(\boldsymbol{X})] \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$, which we call \emph{individual solutions}. Now the simulation $\boldsymbol{f}: [0,1)^{d} \to \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ produces a multi-dimensional array with shape vector $\boldsymbol{d}_{\boldsymbol{\mu}}$ while $\boldsymbol{X} \sim \mathcal{U}[0,1)^d$ as in the scalar function setting. The multi-dimensional array of combined solutions is produced from the multi-dimensional array of individual solutions via a \emph{combining function} $\boldsymbol{C}: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$ so that $\boldsymbol{s} = \boldsymbol{C}(\boldsymbol{\mu})$.
+Theoretical developments, stopping criteria, and implementations of Monte Carlo (MC) methods often focus on approximating a scalar expectation $\mu = \mathbb{E}[f(\boldsymbol{X})]$, where $\boldsymbol{X} \sim \mathcal{U}[0,1)^d$ encapsulates the randomness of a simulation $f: [0,1)^d \to \mathbb{R}$. However, many quantities of interest $\boldsymbol{s} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$, which we call \emph{combined solutions}, may be formulated as functions of expectations $\boldsymbol{\mu} = \mathbb{E}[\boldsymbol{f}(\boldsymbol{X})] \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$, which we call \emph{individual solutions}. Now the simulation $\boldsymbol{f}: [0,1)^{d} \to \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ produces a multi-dimensional array with shape vector $\boldsymbol{d}_{\boldsymbol{\mu}}$ while $\boldsymbol{X} \sim \mathcal{U}[0,1)^d$ as in the scalar function setting. The multi-dimensional array of combined solutions is produced from the multi-dimensional array of individual solutions via a \emph{combining function} $\boldsymbol{C}: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$ so that 
+\begin{equation}
+    \boldsymbol{s} = \boldsymbol{C}(\boldsymbol{\mu}).
+    \label{eq:comb_from_indv}
+\end{equation}
 For example, approximating
 \begin{itemize}
     \item an $(a \times b)$ matrix of expectations sets $\boldsymbol{C}$ to the identity and $\boldsymbol{d}_{\boldsymbol{s}} = \boldsymbol{d}_{\boldsymbol{\mu}} = (a,b)$;
@@ -66,9 +71,9 @@ These examples are further detailed in Section \ref{sec:examples}.
 
 This article generalizes \cite{adaptive_qmc} to develop Algorithm \ref{algo:MCStoppingCriterion}, an efficient and adaptive method for approximating combined solutions $\boldsymbol{s}$ to within a user-specified error tolerance and uncertainty threshold. The algorithm utilizes existing MC  methods that, given an appropriate set of sampling nodes and their corresponding function evaluations, produce error bounds on individual solutions that hold with a desired confidence. Examples of scalar-bounding MC methods include \cite{cubmcg,cubqmclattice,cubqmcsobol,cubqmcbayes_thesis,cubqmcbayeslattice} with robust implementations in the GAIL MATLAB library \cite{ChoEtal21a,hickernell2018monte} among others. Interval arithmetic is used to propagate these individual solution bounds to bounds on the combined solutions which can be used both to test if the error criterion has been met and determine optimal combined solution approximations. 
 
-Resulting vectorized MC algorithms for combined solutions are implemented into the open source QMCPy Python package \cite{QMCPy} which is distributed on both GitHub and PyPI. The implementations incorporate shared samples, multi-dimensional vectorization, parallel computation, and economical function evaluation to enable fast, efficient approximations. %Section \ref{sec:examples} also provides use cases in QMCPy with all examples being reproducible via \cite{vectorized_qmc_demo_notebook}.
+Resulting vectorized MC algorithms for combined solutions are implemented into the open source QMCPy Python package \cite{QMCPy} which is distributed on both GitHub and PyPI. The implementations incorporate shared samples, multi-dimensional vectorization, parallel computation, and economical function evaluation to enable fast, efficient approximations. Section \ref{sec:examples} also provides use cases in QMCPy with all examples being reproducible via \cite{vectorized_qmc_demo_notebook}.
 
-The remainder of the article is organized as follows. Section \ref{sec:MCM} provides a brief overview of scalar MC including both Crude and Quasi-MC methods. More detailed accounts of this mature field are available in \cite{niederreiter1992random,mcbook}. Section \ref{sec:Existing_QMC_Methods} outlines various MC methods for determining error bounds on a scalar individual solution. Section \ref{sec:comb_sol_approx} determines how to set uncertainty levels for individual bounds based on a desired uncertainty for a scalar combined solution and how to propagated bounds from individual to combined solutions using interval arithmetic \cite{interval_analysis}. Section \ref{sec:opt_comb_sol_sc} derives a stopping criterion and optimal approximation for a scalar combined solution based on a user-specified uncertainty threshold and error metric map. Vectorization to a multi-dimensional array of combined solutions is described Section \ref{sec: Vectorized Implementation} with consideration for economical function evaluation. This section also details Algorithm \ref{algo:MCStoppingCriterion} which provides a framework for extending existing MC methods to accommodate approximating multi-dimensional arrays of combined solutions. Section \ref{sec:examples} presents examples from machine learning and global sensitivity analysis before Section \ref{sec:conclusions} concludes with with a brief summary.   
+The remainder of the article is organized as follows. Section \ref{sec:MCM} provides a brief overview of scalar MC including both Crude and Quasi-MC methods. More detailed accounts of this mature field are available in \cite{niederreiter1992random,mcbook}. Section \ref{sec:Existing_QMC_Methods} outlines various MC methods for determining error bounds on a scalar individual solution. Section \ref{sec:comb_sol_approx} determines how to set uncertainty levels for individual bounds based on a desired uncertainty for a scalar combined solution and how to propagated bounds from individual to combined solutions using interval arithmetic \cite{interval_analysis}. Section \ref{sec:opt_comb_sol_sc} derives a stopping criterion and optimal approximation for a scalar combined solution based on a user-specified uncertainty threshold and error metric map. Vectorization to a multi-dimensional array of combined solutions is described Section \ref{sec: Vectorized Implementation} with consideration for economical function evaluation. This section also details Algorithm \ref{algo:MCStoppingCriterion} which provides a framework for extending existing MC methods to accommodate approximating multi-dimensional arrays of combined solutions. Section \ref{sec:examples} presents examples from machine learning and global sensitivity analysis utilizing our implementation in QMCPy. We conclude with a brief summary in Section \ref{sec:conclusions}.   
 
 \section{Scalar Monte Carlo Methods} \label{sec:MCM}
 
@@ -115,10 +120,19 @@ This section discusses some existing CMC and QMC methods for approximating error
 \end{table}
 
 \begin{description}
-    \item[\texttt{CubMCCLT}] When $\boldsymbol{x}_0,\dots,\boldsymbol{x}_{n-1}$ are IID and $f$ has finite variance, the Central Limit Theorem may provide a heuristic $1-\alpha^{(\mu)}$ confidence interval for $\mu$ by setting $\mu^\pm = \hat{\mu} \pm Z_{\alpha^{(\mu)}/2}\sigma/\sqrt{n}$. Here $Z_{\alpha^{(\mu)}/2}$ is the inverse CDF of a standard normal distribution at $1-\alpha^{(\mu)}/2$, and $\hat{\mu}$ is the sample average of function evaluations as in \eqref{eq:mcapprox}. The standard deviation of $f(\boldsymbol{X})$ is the generally unknown quantity $\sigma$ which may be approximated by the unbiased estimator $\hat{\sigma} = \sqrt{1/(n-1)\sum_{i=0}^{n-1}(f(\boldsymbol{x}_i)-\hat{\mu})^2}$, perhaps multiplied by an inflation factor $C>1$ for a more conservative estimate. The resulting, heuristic error bounds on $\mu$ is $\mu^\pm = \hat{\mu} \pm CZ_{\alpha^{(\mu)}/2} \hat{\sigma} / \sqrt{n}$. These bounds only hold as $n \to \infty$ so they cannot guaranteed to satisfy the desired uncertainty.
+    \item[\texttt{CubMCCLT}] When $\boldsymbol{x}_0,\dots,\boldsymbol{x}_{n-1}$ are IID and $f$ has finite variance, the Central Limit Theorem may provide a heuristic $1-\alpha^{(\mu)}$ confidence interval for $\mu$ by setting $\mu^\pm = \hat{\mu} \pm Z_{\alpha^{(\mu)}/2}\sigma/\sqrt{n}$. Here $Z_{\alpha^{(\mu)}/2}$ is the inverse CDF of a standard normal distribution at $1-\alpha^{(\mu)}/2$, and $\hat{\mu}$ is the sample average of function evaluations as in \eqref{eq:mcapprox}. The standard deviation of $f(\boldsymbol{X})$ is the generally unknown quantity $\sigma$ which may be approximated by the unbiased estimator $\hat{\sigma} = \sqrt{1/(n-1)\sum_{i=0}^{n-1}(f(\boldsymbol{x}_i)-\hat{\mu})^2}$, perhaps multiplied by an inflation factor $C>1$ for a more conservative estimate. The resulting, heuristic error bounds on $\mu$ is
+    \begin{equation*}
+        \mu^\pm = \hat{\mu} \pm \frac{CZ_{\alpha^{(\mu)}/2}\hat{\sigma}}{\sqrt{n}}
+        \label{eq:clt_mu_bounds}.
+    \end{equation*}
+    These bounds only hold as $n \to \infty$ so they cannot guaranteed to satisfy the desired uncertainty.
     
     \citeauthor{cubmcg} modify this idea in \cite{cubmcg} to accommodate  finite $n$ and provide error bounds that are guaranteed to satisfy the uncertainty threshold. Their two-step method relies on the Berry-Esseen inequality and the assumption that $f$ lies in a cone of functions with known, bounded kurtosis. This robust method is not immediately compatible with the framework of this article but has been implemented into the QMCPy stopping criterion class \texttt{CubMCG} to approximate a scalar individual solution.
-    \item[\texttt{CubQMCRep}] This method utilizes IID randomizations of a LD sequence and then derives bounds based on the IID sample averages. Specifically, suppose $\{\boldsymbol{x}_i^{(1)}\}_{i=0}^{n-1},\dots,\{\boldsymbol{x}_i^{(R)}\}_{i=0}^{n-1}$ are $R$ IID randomizations of an LD point set. Then one may compute the $R$ IID sample averages $\hat{\mu}_r = \frac{1}{n} \sum_{i=0}^{n-1} f(\boldsymbol{x}_i^{(r)})$ for $r = 1,\dots,R$. Similar to what was done for \texttt{CubMCCLT}, one may then compute $\hat{\mu} = 1/R \sum_{r=1}^R \hat{\mu}_r$ and $\hat{\sigma}_R = \sqrt{1/(R-1)\sum_{i=1}^R(\hat{\mu}_r - \hat{\mu})^2}$ to produce heuristic bounds $\mu^\pm = \hat{\mu} \pm \frac{C T_{\alpha^{(\mu)}/2,R-1} \hat{\sigma}_R}{\sqrt{R}}$. Here $C>1$ is still an inflation factor and we now use $T_{\alpha^{(\mu)}/2,R-1}$, the inverse CDF of Student's-$t$ distribution with $R-1$ degrees of freedom, instead of $Z_{\alpha^{(\mu)}/2}$.
+    \item[\texttt{CubQMCRep}] This method utilizes IID randomizations of a LD sequence and then derives bounds based on the IID sample averages. Specifically, suppose $\{\boldsymbol{x}_i^{(1)}\}_{i=0}^{n-1},\dots,\{\boldsymbol{x}_i^{(R)}\}_{i=0}^{n-1}$ are $R$ IID randomizations of an LD point set. Then one may compute the $R$ IID sample averages $\hat{\mu}_r = \frac{1}{n} \sum_{i=0}^{n-1} f(\boldsymbol{x}_i^{(r)})$ for $r = 1,\dots,R$. Similar to what was done for \texttt{CubMCCLT}, one may then compute 
+    $$\hat{\mu} = \frac{1}{R} \sum_{r=1}^R \hat{\mu}_r \quad\text{and}\quad \hat{\sigma}_R = \sqrt{\frac{1}{R-1}\sum_{i=1}^R(\hat{\mu}_r - \hat{\mu})^2}$$
+    to produce heuristic bounds  
+    $$\mu^\pm = \hat{\mu} \pm \frac{C T_{\alpha^{(\mu)}/2,R-1} \hat{\sigma}_R}{\sqrt{R}}.$$
+    Here $C>1$ is still an inflation factor and we now use $T_{\alpha^{(\mu)}/2,R-1}$, the inverse CDF of Student's-$t$ distribution with $R-1$ degrees of freedom, instead of $Z_{\alpha^{(\mu)}/2}$.
     A more careful treatment of this heuristic method is available in either \cite[Chapter 17]{mcbook} or \cite{qmc4pde_preprint}. 
     \item[\texttt{CubQMC\{Net,Lattice\}G}] \citeauthor{cubqmclattice} developed algorithms in \cite{adaptive_qmc} that track the decay of Fourier coefficients based on a single randomized LD sequence i.e. $R=1$. These algorithms provide deterministic error bounds on $\mu$ for functions in a cone parameterized by the decay rate of the Walsh coefficients for digital sequences \cite{cubqmcsobol} or the complex exponential Fourier coefficients for integration lattices \cite{cubqmclattice}. %In particular for \texttt{CubQMCLatticeG}, the cone comprises of functions whose Fourier series are absolutely convergent and whose true Fourier coefficients decay steadily as the wave-number tends to infinity.
     \item[\texttt{CubQMCBayes\{Net,Lattice\}G}] Another pair of QMC algorithms take a Bayesian approach to error estimation, again using only a single randomized LD sequence. Rather than assume the function lies within a cone, these algorithms assume the integrand is an instance of a Gaussian process. 
@@ -149,14 +163,16 @@ In the above, $\prod(\boldsymbol{d}_{\boldsymbol{\mu}})$ is the product of all e
     \label{eq:indv_prob_bounds_all}
 \end{equation} 
 
-Recall that $s = C(\boldsymbol{\mu})$ where $C: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}$. To propagate individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ to combined bounds $[s^-,s^+]$, one defines interval arithmetic \cite{interval_analysis} functions $C^-,C^+: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \times \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}$ so that
+Recall from \eqref{eq:comb_from_indv} that $s = C(\boldsymbol{\mu})$ where $C: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}$. To propagate individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ to combined bounds $[s^-,s^+]$, one defines interval arithmetic \cite{interval_analysis} functions $C^-,C^+: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \times \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}$ so that
 \begin{equation}
-    s^- = C^-(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+) = \min_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} C(\boldsymbol{\mu}), \quad 
-    s^+= C^+(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+) = \max_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} C(\boldsymbol{\mu}).
+    \begin{aligned}
+    s^- &= C^-(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+) &&= \min_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} C(\boldsymbol{\mu}) \\
+    s^+ &= C^+(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+) &&= \max_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} C(\boldsymbol{\mu}).
+    \end{aligned}
     \label{eq:C_minus_C_plus}
 \end{equation}
-Table \ref{table:elementary_ops_Cpm} provides examples of such interval arithmetic functions for some basic operations. In all, given combined uncertainty threshold $\alpha^{(s)}$ we may set individual thresholds $\boldsymbol{\alpha}^{\boldsymbol{\mu}}$ via \eqref{eq:alpha_mu_from_alpha_s} then use vectorized, scalar MC algorithms to find individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ satisfying \eqref{eq:indv_prob_bounds} so that \eqref{eq:indv_prob_bounds_all} holds. Then setting combined bounds $[s^-,s^+]$ via \eqref{eq:C_minus_C_plus} will guarantee we satisfy the desired inequality 
-$$P(s \in [s^-,s^+]) \geq 1-\alpha^{(s)}.$$
+Table \ref{table:elementary_ops_Cpm} provides examples of such interval arithmetic functions for some basic operations. \JRComment{The next line is not clear:} \FJHComment{assumptions?} In all, given $\alpha^{(s)}$ we may set individual tolerances via \eqref{eq:alpha_mu_from_alpha_s} then use vectorized, scalar MC algorithms to find individual bounds satisfying \eqref{eq:indv_prob_bounds} so that \eqref{eq:indv_prob_bounds_all} holds. Then setting combined bounds via \eqref{eq:C_minus_C_plus} will guarantee we satisfy the desired inequality
+$$\qquad  P(s \in [s^-,s^+]) \geq 1-\alpha^{(s)}.$$
 
 \begin{table}[t]
 \begin{tabular}{r  c  c}
@@ -184,8 +200,8 @@ This section derives a stopping criterion and optimal approximation for a scalar
 Theorem \ref{thm:shat_opt} below determines an optimal $\hat{s}$ and an equivalent condition to \eqref{eq:sc_raw} when $h^{(\varepsilon)}$ is a metric map i.e Lipschitz continuous with constant at most $1$. Compatible error metric options include
 \begin{subequations}
 \begin{align}
-    %h^{(\varepsilon)}(s) & = \varepsilon^\text{abs} \quad &&\text{absolute error satisfied}, \label{eq:h_abs}\\
-    %h^{(\varepsilon)}(s) & = \lvert s \rvert \varepsilon^\text{rel} \quad &&\text{relative error satisfied}, \label{eq:h_rel}\\
+    h^{(\varepsilon)}(s) & = \varepsilon^\text{abs} \quad &&\text{absolute error satisfied}, \label{eq:h_abs}\\
+    h^{(\varepsilon)}(s) & = \lvert s \rvert \varepsilon^\text{rel} \quad &&\text{relative error satisfied}, \label{eq:h_rel}\\
     h^{(\varepsilon)}(s) &= \max\left(\varepsilon^\text{abs},\lvert s \rvert \varepsilon^\text{rel} \right) \quad &&\text{absolute or relative error satisfied,} \label{eq:h_abs_or_rel} \\
     h^{(\varepsilon)}(s) &= \min\left(\varepsilon^\text{abs},\lvert s \rvert \varepsilon^\text{rel} \right) \quad &&\text{absolute and relative error satisfied.} \label{eq:h_abs_and_rel}
 \end{align}
@@ -243,9 +259,14 @@ Algorithm \ref{algo:MCStoppingCriterion} details the adaptive, vectorized MC pro
     \label{algo:MCStoppingCriterion}
     \begin{algorithmic}
     \Require $\boldsymbol{f}: (0,1)^d \to \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$, the simulation where $\boldsymbol{\mu} = \mathbb{E}[\boldsymbol{f}(\boldsymbol{X})]$ for $\boldsymbol{X} \sim \mathcal{U}[0,1)^d$.
-    \Require $\boldsymbol{\alpha}^{(\boldsymbol{s})} \in (0,1)^{\boldsymbol{d}_{\boldsymbol{s}}}$, the desired uncertainty levels for combined solutions so $[\boldsymbol{s}^-,\boldsymbol{s}^+]$ satisfy $P(s_{\boldsymbol{l}} \in [s_{\boldsymbol{l}}^-,s_{\boldsymbol{l}}^+]) \geq 1-\alpha^{(\boldsymbol{s})}_{\boldsymbol{l}}$ for any $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$. If the user wants bounds $[\boldsymbol{s}^-,\boldsymbol{s}^+]$ to satisfy $P(\boldsymbol{s} \in [\boldsymbol{s}^-,\boldsymbol{s}^+]) \geq 1-\alpha$ for some $\alpha \in (0,1)$ then set $\alpha_{\boldsymbol{l}}^{(\boldsymbol{s})} = 1/\prod(\boldsymbol{d}_{\boldsymbol{s}})$ in the spirit of \eqref{eq:alpha_mu_from_alpha_s}.
-    \Require $\boldsymbol{C}^-,\boldsymbol{C}^+: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \times \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$, vectorized interval arithmetic functions as in \eqref{eq:C_minus_C_plus}.% so that \eqref{eq:indv_prob_bounds_all} implies \eqref{eq:comb_bounds_per_bl}.
-    \Require $h^{(\varepsilon_{\boldsymbol{l}})}_{\boldsymbol{l}}: \mathbb{R} \to \mathbb{R}^+$ for $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{l}}$, for example \eqref{eq:h_abs_or_rel} or \eqref{eq:h_abs_and_rel}.
+    \Require $\boldsymbol{\alpha}^{(\boldsymbol{s})} \in (0,1)^{\boldsymbol{d}_{\boldsymbol{s}}}$, the desired uncertainty levels for combined solutions so the bounds result in
+    \begin{equation}
+        P(s_{\boldsymbol{l}} \in [s_{\boldsymbol{l}}^-,s_{\boldsymbol{l}}^+]) \geq 1-\alpha^{(\boldsymbol{s})}_{\boldsymbol{l}} \quad \text{for any}\quad \; \boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}.
+        \label{eq:comb_bounds_per_bl}
+    \end{equation}
+    If the user wants bounds $[\boldsymbol{s}^-,\boldsymbol{s}^+]$ so that $P(\boldsymbol{s} \in [\boldsymbol{s}^-,\boldsymbol{s}^+]) \geq 1-\alpha$ for some $\alpha \in (0,1)$ then set $\alpha_{\boldsymbol{l}}^{(\boldsymbol{s})} = 1/\prod(\boldsymbol{d}_{\boldsymbol{s}})$ in the spirit of \eqref{eq:alpha_mu_from_alpha_s}.
+    \Require $\boldsymbol{C}^-,\boldsymbol{C}^+: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \times \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$, vectorized interval arithmetic functions as in \eqref{eq:C_minus_C_plus} so that \eqref{eq:indv_prob_bounds_all} implies \eqref{eq:comb_bounds_per_bl}.
+    \Require $h^{(\varepsilon_{\boldsymbol{l}})}_{\boldsymbol{l}}: \mathbb{R} \to \mathbb{R}^+$ for $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{l}}$, for example \eqref{eq:h_abs}, \eqref{eq:h_rel}, \eqref{eq:h_abs_or_rel}, or \eqref{eq:h_abs_and_rel}.
     \Require $\boldsymbol{D}: \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{s}}} \to \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$, a dependency function mapping stopping criterion flags for the combined solutions to flags for individual solutions. 
     \Require A generator of IID or LD sequences.
     \Require A scalar CMC or QMC algorithm compatible with the sequence generator(s) which produces individual bounds to within a desired uncertainty threshold based on samples from the sequence(s) and their corresponding function evaluations. See the methods in Section \ref{sec:Existing_QMC_Methods}.
@@ -258,8 +279,8 @@ Algorithm \ref{algo:MCStoppingCriterion} details the adaptive, vectorized MC pro
     \State Set $\boldsymbol{\alpha}^{(\boldsymbol{\mu})}$ based on $\boldsymbol{\alpha}^{(\boldsymbol{s})}$ as described in Section \ref{sec: Vectorized Implementation}
     \While{$b_{\boldsymbol{l}}^{(\boldsymbol{s})} = \text{False}$ for some $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$} \Comment{A combined solution is not sufficiently bounded}
         \State Generate nodes from the IID or LD sequence(s) from index $n_\text{start}$ to $n_\text{end}-1$
-        \State Evaluate $\boldsymbol{f}$ at the new nodes where $\boldsymbol{b}^{(\boldsymbol{\mu})}=\textbf{\text{False}}$ \Comment{may be done in parallel}
-        \State Update $\boldsymbol{\mu}^-$ and $\boldsymbol{\mu}^+$ using the scalar CMC or QMC algorithms where $\boldsymbol{b}^{(\boldsymbol{\mu})}=\textbf{\text{False}}$
+        \State Evaluate $\boldsymbol{f}$ at the new nodes from the previous step to produce outputs where $\boldsymbol{b}^{(\boldsymbol{\mu})}=\textbf{\text{False}}$ \\ \Comment{may be done in parallel if advantageous}
+        \State Update $\boldsymbol{\mu}^-$ and $\boldsymbol{\mu}^+$ based on the new nodes and function evaluations using the scalar CMC or QMC algorithms applied element-wise 
         \State $[\boldsymbol{s}^-,\boldsymbol{s}^+] = \left[\boldsymbol{C}^-(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+),\boldsymbol{C}^+(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+)\right]$ 
         \State $\hat{s}_{\boldsymbol{l}} \gets \frac{1}{2}\left[s_{\boldsymbol{l}}^-+s_{\boldsymbol{l}}^++h^{(\varepsilon_{\boldsymbol{l}})}_{\boldsymbol{l}}(s_{\boldsymbol{l}}^-)-h^{(\varepsilon_{\boldsymbol{l}})}_{\boldsymbol{l}}(s_{\boldsymbol{l}}^+)\right], \quad\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ \Comment{\eqref{eq:shat_opt} element-wise}
         \State $b^{(\boldsymbol{s})}_{\boldsymbol{l}} \gets \text{Boolean}\left(s_{\boldsymbol{l}}^+-s_{\boldsymbol{l}}^- < h^{(\varepsilon_{\boldsymbol{l}})}_{\boldsymbol{l}}(s_{\boldsymbol{l}}^-)+h^{(\varepsilon_{\boldsymbol{l}})}_{\boldsymbol{l}}(s_{\boldsymbol{l}}^+)\right),\quad \boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ \Comment{\eqref{eq:sc} element-wise}
@@ -273,39 +294,39 @@ Algorithm \ref{algo:MCStoppingCriterion} details the adaptive, vectorized MC pro
 
 \section{Examples} \label{sec:examples}
 
-This section presents a number of examples spanning machine learning and sensitivity analysis. Code implementing these examples in the QMCPy framework and reproducing the figures in this article is available in \cite{vectorized_qmc_demo_notebook}. For more details on using QMCPy for scalar individual solution approximation see \cite{QMCSoftware}.
+The following examples are implemented into the object oriented QMCPy framework. Throughout the remainder of this section we assume the QMCPy package \cite{QMCPy} has been imported alongside the numerical package NumPy \cite{numpy} via the following Python commands:
+\lstinputlisting[style=Python,label={py:imports}]{python/imports.txt}
+The four main abstract classes in QMCPy are the 
+\begin{itemize}
+    \item \emph{discrete distribution} class for generating IID or LD sequences;
+    \item \emph{true measure} class for facilitating variable transforms to adapt randomness to the standard uniform;
+    \item \emph{integrand} class specifying the function of the true measure we want to take the expectation of; 
+    \item \emph{stopping criterion} class with an \texttt{integrate} method to adaptively sample the integrand until the stopping criterion is satisfied as in Algorithm \ref{algo:MCStoppingCriterion}.
+\end{itemize}
+Each MC problem must instantiate a subclass of each of the four abstract classes in a nested fashion. 
 
-% Throughout the remainder of this section we assume the QMCPy package \cite{QMCPy} has been imported alongside the numerical package NumPy \cite{numpy} via the following Python commands:
-% \lstinputlisting[style=Python,label={py:imports}]{python/imports.txt}
-% The four main abstract classes in QMCPy are the 
-% \begin{itemize}
-%     \item \emph{discrete distribution} class for generating IID or LD sequences;
-%     \item \emph{true measure} class for facilitating variable transforms to adapt randomness to the standard uniform;
-%     \item \emph{integrand} class specifying the function of the true measure we want to take the expectation of; 
-%     \item \emph{stopping criterion} class with an \texttt{integrate} method to adaptively sample the integrand until the stopping criterion is satisfied as in Algorithm \ref{algo:MCStoppingCriterion}.
-% \end{itemize}
-% Each MC problem must instantiate a subclass of each of the four abstract classes in a nested fashion. 
-
-% As a simple example, let us compute the expected displacement and stress on a cantilever beam as defined in \cite{ simulationlib_cantilever}: 
-% \begin{equation*}
-%     D(T_1,T_2,T_3) = \frac{4l^3}{T_1 w t} \sqrt{\frac{T_2^2}{t^4} + \frac{T_3^2}{w^4}}, \qquad S(T_1,T_2,T_3) = 600\left(\frac{T_2}{wt^2} + \frac{T_3}{w^2t}\right).
-%     \label{eq:cantilever_beam}
-% \end{equation*}
-% Here $l=100$, $w=4$, $t=2$ are constants and $T_1$, $T_2$, $T_3$ are independent Gaussian random variables with mean and standard deviation as defined as in the Table \ref{tab:cantilever_beam} below.
-% \begin{table}[t]
-%     \centering
-%     \begin{tabular}{r c c l}
-%         Gaussian Variable & mean & standard deviation & Description \\ 
-%         \hline \\
-%         $T_1$ & $2.9 \times 10^7$ & $1.45 \times 10^6$ & Young's modulus of beam material \\
-%         $T_2$ & $500$ & $100$ & horizontal load on beam \\
-%         $T_3$ & $1000$ & $100$ & vertical load on beam
-%     \end{tabular}
-%     \caption{Variable descriptions for the cantilever beam function.}
-%     \label{tab:cantilever_beam}
-% \end{table}
-% Listing \ref{py:simpleex} uses QMCPy to approximates $s_1 = \mu_1 = \mathbb{E}[D(\boldsymbol{T})]$ and $s_2 = \mu_2 = \mathbb{E}[S(\boldsymbol{T})]$ where the identity functions for $\boldsymbol{C}^-$, $\boldsymbol{C}^+$, and $\boldsymbol{D}$ are defaulted to. Notice that \texttt{CustomFun} is initialized with $g=(D,S)$ as a function of the Gaussian random vector $\boldsymbol{T}$ rather than the transformed integrand $f$, which is a function of $\boldsymbol{X} \sim \mathcal{U}(0,1)^3$. The variable transform taking $g$ to $f$ is performed automatically by QMCPy without explicit specification from the user. Here the default absolute or relative error metric \eqref{eq:h_abs_or_rel} is used.
-% \lstinputlisting[caption={Simple QMCPy Example},style=Python,label={py:simpleex}]{python/simple_ex.txt}
+As a simple example, let us compute the expected displacement and stress on a cantilever beam as defined in \cite{ simulationlib_cantilever}: 
+\begin{align*}
+    D(T_1,T_2,T_3) &= \frac{4l^3}{T_1 w t} \sqrt{\frac{T_2^2}{t^4} + \frac{T_3^2}{w^4}} \\ 
+    S(T_1,T_2,T_3) &= 600\left(\frac{T_2}{wt^2} + \frac{T_3}{w^2t}\right).
+    \label{eq:cantilever_beam}
+\end{align*}
+Here $l=100$, $w=4$, $t=2$ are constants and $T_1$, $T_2$, $T_3$ are independent Gaussian random variables with mean and standard deviation as defined as in the Table \ref{tab:cantilever_beam} below.
+\begin{table}[t]
+    \centering
+    \begin{tabular}{r c c l}
+        Gaussian Variable & mean & standard deviation & Description \\ 
+        \hline \\
+        $T_1$ & $2.9 \times 10^7$ & $1.45 \times 10^6$ & Young's modulus of beam material \\
+        $T_2$ & $500$ & $100$ & horizontal load on beam \\
+        $T_3$ & $1000$ & $100$ & vertical load on beam
+    \end{tabular}
+    \caption{Variable descriptions for the cantilever beam function.}
+    \label{tab:cantilever_beam}
+\end{table}
+Listing \ref{py:simpleex} uses QMCPy to approximates $s_1 = \mu_1 = \mathbb{E}[D(\boldsymbol{T})]$ and $s_2 = \mu_2 = \mathbb{E}[S(\boldsymbol{T})]$ where the identity functions for $\boldsymbol{C}^-$, $\boldsymbol{C}^+$, and $\boldsymbol{D}$ are defaulted to. Notice that \texttt{CustomFun} is constructed with $g$, a function of the true measure $\boldsymbol{T}$, rather than $f$, a function of MC compatible $\boldsymbol{X}$ \FJHComment{I do not understand what his means.}. The variable transform taking $g$ to $f$ is performed automatically by QMCPy without explicit specification from the user. Here the absolute or relative error metric \eqref{eq:h_abs_or_rel} is defaulted to.
+\lstinputlisting[caption={Simple QMCPy Example},style=Python,label={py:simpleex}]{python/simple_ex.txt}
+For more details on the QMCPy framework see \cite{QMCSoftware}.
 
 \subsection{Vectorized Acquisition Functions for Bayesian Optimization}
 
@@ -318,16 +339,32 @@ Bayesian optimization (BO) is a sequential optimization technique that attempts 
 \end{enumerate}
 More details on Bayesian optimization including formulas for the posterior mean and covariance may be found in \cite{frazier2018tutorial}.
 
-Concretely, suppose we have already sampled $\tilde{f}$ at $\boldsymbol{z}_1,\dots,\boldsymbol{z}_{N} \in [0,1]^{d}$ to collect data $\mathcal{D}=\{(\boldsymbol{z}_i,y_i)\}_{i=1}^N$ where $y_i = \tilde{f}(\boldsymbol{z}_i)$. BO may then fit a Gaussian process surrogate $\tilde{g}$ to data $\mathcal{D}$. The next $q$ sampling locations may then be chosen to maximize  an acquisition function $\alpha$ based on the surrogate $\tilde{g}$ so that $\boldsymbol{z}_{N+1}, \dots, \boldsymbol{z}_{N+q}$ are the rows of $\mathop{\text{argmax}}_{\boldsymbol{Z} \in [0,1]^{(q,d)}}\alpha(\boldsymbol{Z})$. Many acquisition functions may be expressed as an expectation of the form $\alpha(\boldsymbol{Z}) = \mathbb{E}\left[a(\boldsymbol{y}) \mid \boldsymbol{y} \sim \mathcal{N}\left(\boldsymbol{m},\boldsymbol{\Sigma}\right)\right]$ where $\boldsymbol{m} \in \mathbb{R}^{q}$, $\boldsymbol{\Sigma} \in \mathbb{R}^{(q, q)}$ are the posterior mean and covariance respectively of the Gaussian process at points $\boldsymbol{Z}$. Here we focus on the q-Expected Improvement (qEI) acquisition function which uses $a(\boldsymbol{y}) = \max_{1 \leq i \leq q} (y_i - y^*)_+$ where $y^*= \max\left(y_1,\dots,y_N\right)$ is the current maximum and $(\cdot)_+ = \max(\cdot,0)$. 
+Concretely, suppose we have already sampled $\tilde{f}$ at $\boldsymbol{z}_1,\dots,\boldsymbol{z}_{N} \in [0,1]^{d}$ to collect data $\mathcal{D}=\{(\boldsymbol{z}_i,y_i)\}_{i=1}^N$ where $y_i = \tilde{f}(\boldsymbol{z}_i)$. BO may then fit a Gaussian process surrogate $\tilde{g}$ to data $\mathcal{D}$. The next $q$ sampling locations may then be chosen to maximize  an acquisition function $\alpha$ based on the surrogate $\tilde{g}$ so that 
+\begin{equation}
+    \begin{pmatrix}\boldsymbol{z}_{N+1} \\ \vdots \\ \boldsymbol{z}_{N+q}\end{pmatrix} = \mathop{\text{argmax}}_{\boldsymbol{Z} \in [0,1]^{(q,d)}}\alpha(\boldsymbol{Z}).
+    \label{eq:nextq}
+\end{equation}
+Many acquisition functions may be expressed as an expectation of the form
+$$\alpha(\boldsymbol{Z}) = \mathbb{E}\left[a(\boldsymbol{y}) \mid \boldsymbol{y} \sim \mathcal{N}\left(\boldsymbol{m},\boldsymbol{\Sigma}\right)\right]$$
+where $\boldsymbol{m} \in \mathbb{R}^{q}$, $\boldsymbol{\Sigma} \in \mathbb{R}^{(q, q)}$ are the posterior mean and covariance respectively of the Gaussian process at points $\boldsymbol{Z}$. Here we focus on the q-Expected Improvement (qEI) acquisition function which uses 
+$$a(\boldsymbol{y}) = \max_{1 \leq i \leq q} (y_i - y^*)_+$$
+where $y^*= \max\left(y_1,\dots,y_N\right)$ is the current maximum and $(\cdot)_+ = \max(\cdot,0)$. 
 
-Suppose that instead we take the argument maximum  from among a finite set of $q$-sized batches $\boldsymbol{Z}_1,\dots,\boldsymbol{Z}_c \in [0,1]^{(q, d)}$ so that $\boldsymbol{z}_{N+1}, \dots,\boldsymbol{z}_{N+q}$ are instead set to be the rows of $\mathop{\text{argmax}}_{\boldsymbol{Z} \in \{\boldsymbol{Z}_1,\dots,\boldsymbol{Z}_c\}}\alpha(\boldsymbol{Z})$. We may vectorize the acquisition function computations to 
+Suppose that in \eqref{eq:nextq} we take the maximum argument from among a finite set of $q$-sized batches $\boldsymbol{Z}_1,\dots,\boldsymbol{Z}_c \in [0,1]^{(q, d)}$ so that 
+\begin{equation}
+    \begin{pmatrix}\boldsymbol{z}_{N+1} \\ \vdots \\ \boldsymbol{z}_{N+q}\end{pmatrix} = \mathop{\text{argmax}}_{\boldsymbol{Z} \in \{\boldsymbol{Z}_1,\dots,\boldsymbol{Z}_c\}}\alpha(\boldsymbol{Z}).
+    \label{eq:nextq_discrete}
+\end{equation}
+We may vectorize the acquisition function computations to 
 \begin{equation}
     \boldsymbol{s} = \boldsymbol{\mu} = \begin{pmatrix} \alpha(\boldsymbol{Z}_1) \\ \vdots \\ \alpha(\boldsymbol{Z}_c)\end{pmatrix} = \mathbb{E}\begin{pmatrix}a\left(\boldsymbol{A}_1\boldsymbol{\Phi}^{-1}(\boldsymbol{X})+\boldsymbol{m}_1\right) \\ \vdots \\ a\left(\boldsymbol{A}_c\boldsymbol{\Phi}^{-1}(\boldsymbol{X})+\boldsymbol{m}_c\right)\end{pmatrix}
     \label{eq:bs_qei}
 \end{equation}
-where $\boldsymbol{X} \sim \mathcal{U}(0,1)^q$ and $\boldsymbol{\Phi}^{-1}$ is the inverse CDF of the standard Gaussian taken element wise. Now $\boldsymbol{m}_i$, $\boldsymbol{\Sigma}_i = \boldsymbol{A}_i\boldsymbol{A}_i^T$ are the posterior mean, covariance respectively of the Gaussian process at $\boldsymbol{Z}_i$ so that $\boldsymbol{A}_i\boldsymbol{\Phi}^{-1}(\boldsymbol{X})+\boldsymbol{m}_i \sim \mathcal{N}\left(\boldsymbol{m}_i,\boldsymbol{\Sigma}_i\right)$ for $i=1,\dots,c$.
+where $\boldsymbol{X} \sim \mathcal{U}(0,1)^q$ and $\boldsymbol{\Phi}^{-1}$ is the inverse CDF of the standard Gaussian taken element wise. Now $\boldsymbol{m}_i$, $\boldsymbol{\Sigma}_i = \boldsymbol{A}_i\boldsymbol{A}_i^T$ are the posterior mean, covariance respectively of the Gaussian process at $\boldsymbol{Z}_i$ so that 
+$$\boldsymbol{A}_i\boldsymbol{\Phi}^{-1}(\boldsymbol{X})+\boldsymbol{m}_i \sim \mathcal{N}\left(\boldsymbol{m}_i,\boldsymbol{\Sigma}_i\right)$$
+for $i=1,\dots,c$.
 
-Since the quantity of interest is simply the vector of expectations in \eqref{eq:bs_qei}, one may set $\boldsymbol{C}$, $\boldsymbol{C}^-$, $\boldsymbol{C}^+$, and $\boldsymbol{D}$ to appropriate identity functions. The process described above is visualized in Figure \ref{fig:bo_qei} for $d=1$ and $q=2$. Notice the optimal point trades off exploiting parts of the domain where performant samples have already been observed and  exploring parts of the domain where the Gaussian Process has large uncertainty.  As $q$ and/or $d$ grow, the number of candidates $c$ required for the discrete argument maximum to be a good approximation of the continuous argument maximum grows rapidly and therefore rendering such non-greedy acquisition functions intractable for even moderate values of $q$ or $d$.
+Since the quantity of interest is simply the vector of expectations in \eqref{eq:bs_qei}, one may set $\boldsymbol{C}$, $\boldsymbol{C}^-$, $\boldsymbol{C}^+$, and $\boldsymbol{D}$ to appropriate identity functions. The process described above is visualized in Figure \ref{fig:bo_qei} for $d=1$ and $q=2$. Notice the optimal point trades off exploiting parts of the domain where performant samples have already been observed and  exploring parts of the domain where the Gaussian Process has large uncertainty.  As $q$ and/or $d$ grow, the number of candidates $c$ required for \eqref{eq:nextq_discrete} to be a good discrete approximation of \eqref{eq:nextq} grows rapidly and therefore rendering such non-greedy acquisition functions intractable for even moderate values of $q$ or $d$.
 
 \begin{figure}[t]
     \centering
@@ -342,21 +379,26 @@ The Bayesian framework combines prior knowledge of unknown parameters $\boldsymb
 $$P\left(\boldsymbol{\theta} \mid \boldsymbol{y} \right) = \frac{P(\boldsymbol{y} \mid \boldsymbol{\theta}) P(\boldsymbol{\theta})}{P\left(\boldsymbol{y}\right)} = \frac{\prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{\theta}) P(\boldsymbol{\theta})}{\mathbb{E}\left[\prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{\theta})\right]}.$$
 Here the expectation is taken with respect to the prior distribution on $\boldsymbol{\Theta}$ with density $P(\boldsymbol{\theta})$, and $P\left(\boldsymbol{y} \mid \boldsymbol{S} \right)$ is the likelihood density which factors into the product of likelihoods $\rho(y_i \mid \boldsymbol{S})$ since the observations are IID. 
 
-A useful quantity of interest is the posterior mean of $\boldsymbol{\Theta}$. In this example, the posterior mean is our combined solution $\boldsymbol{s}$ which may be written as the ratio of expectations via $\boldsymbol{s} = \mathbb{E}\left[\boldsymbol{\Theta} \mid \boldsymbol{y}\right] = \mathbb{E}\left[\boldsymbol{\Theta} \prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{S})\right]/\mathbb{E}\left[\prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{\Theta})\right]$. As before, the expectations are taken with respect to the prior distribution on $\boldsymbol{\Theta}$. In the framework of this article $\boldsymbol{\mu} \in \mathbb{R}^{(2, d_{\boldsymbol{s}})}$ where for $k=1,\dots,d_{\boldsymbol{s}}$ we have 
+A useful quantity of interest is the posterior mean of $\boldsymbol{\Theta}$. In this example, the posterior mean is our combined solution $\boldsymbol{s}$ which may be written as the ratio of expectations via
+$$\boldsymbol{s} = \mathbb{E}\left[\boldsymbol{\Theta} \mid \boldsymbol{y}\right] = \frac{\mathbb{E}\left[\boldsymbol{\Theta} \prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{S})\right]}{\mathbb{E}\left[\prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{\Theta})\right]}.$$
+As before, the expectations are taken with respect to the prior distribution on $\boldsymbol{\Theta}$. In the framework of this article $\boldsymbol{\mu} \in \mathbb{R}^{(2, d_{\boldsymbol{s}})}$ where for $k=1,\dots,d_{\boldsymbol{s}}$ we have 
 $$\mu_{0k} = \mathbb{E}\left[\Theta_i \prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{\Theta})\right], \qquad \mu_{1k} = \mathbb{E}\left[\prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{\Theta})\right], \qquad \text{and} \qquad s_k = \frac{\mu_{0k}}{\mu_{1k}}.$$
-While $\mu_{1k}$ is the same for all $1 \leq k \leq d_{\boldsymbol{s}}$, we opt to keep separate denominator estimates for each coefficient. Defining $\boldsymbol{C}^-$ and $\boldsymbol{C}^+$ follow from vectorizing the quotient forms in Table \ref{table:elementary_ops_Cpm} while the dependency function $\boldsymbol{D}: \{\text{True},\text{False}\}^{d_{\boldsymbol{s}}} \to \{\text{True},\text{False}\}^{(2, d_{\boldsymbol{s}})}$ may be defined by stacking row vectors of combined flags. % such that
-%$$\boldsymbol{D}\left(\boldsymbol{b}^{(\boldsymbol{s})}\right) = \begin{pmatrix} \boldsymbol{b}^{(\boldsymbol{s})} \\ \boldsymbol{b}^{(\boldsymbol{s})} \end{pmatrix}.$$
+While $\mu_{1k}$ is the same for all $1 \leq k \leq d_{\boldsymbol{s}}$, we opt to keep separate denominator estimates for each coefficient. Defining $\boldsymbol{C}^-$ and $\boldsymbol{C}^+$ follow from vectorizing the quotient forms in Table \ref{table:elementary_ops_Cpm} while the dependency function $\boldsymbol{D}: \{\text{True},\text{False}\}^{d_{\boldsymbol{s}}} \to \{\text{True},\text{False}\}^{(2, d_{\boldsymbol{s}})}$ may be defined by stacking row vectors of combined flags such that
+$$\boldsymbol{D}\left(\boldsymbol{b}^{(\boldsymbol{s})}\right) = \begin{pmatrix} \boldsymbol{b}^{(\boldsymbol{s})} \\ \boldsymbol{b}^{(\boldsymbol{s})} \end{pmatrix}.$$
 Maintaining only a single estimate of $\mathbb{E}\left[\prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{\Theta})\right]$ would require a different dependency function which removes economic function evaluation in favor of reduced storage. 
 
-% Consider Bayesian logistic regression as a concrete example. Here the dataset contains observations $y_i \in \{0,1\}$ at locations $\boldsymbol{z}_i = \left(z_{i1},\dots,z_{i(d_{\boldsymbol{s}}-1)},1\right)$ for $i=1,\dots,N$ where the last value is $1$ to accommodate an intercept term. The sigmoid likelihood function $\rho(y_i = 1 \mid \boldsymbol{\theta}) = \frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}$ may be used to yield
-% $$P(\boldsymbol{y} \mid \boldsymbol{\theta}) = \prod_{i=1}^N \left(\frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}\right)^{y_i} \left(1-\frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}\right)^{1-y_i} = \prod_{i=1}^N \frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)^{y_i}}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}.$$
+Consider Bayesian logistic regression as a concrete example. Here the dataset contains observations $y_i \in \{0,1\}$ at locations $\boldsymbol{z}_i = \left(z_{i1},\dots,z_{i(d_{\boldsymbol{s}}-1)},1\right)$ for $i=1,\dots,N$ where the last value is $1$ to accommodate an intercept term. The sigmoid likelihood function
+$$\rho(y_i = 1 \mid \boldsymbol{\theta}) = \frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}$$
+may be used to yield
+$$P(\boldsymbol{y} \mid \boldsymbol{\theta}) = \prod_{i=1}^N \left(\frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}\right)^{y_i} \left(1-\frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}\right)^{1-y_i} = \prod_{i=1}^N \frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)^{y_i}}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}.$$
 
-% Listing \ref{py:blr} performs Bayesian logistic regression in QMCPy
-% %on the Haberman's Survival Dataset retrieved from the UCI Machine Learning Repository \cite{uci_ml_repo}
-% . Here we use a normal prior $\boldsymbol{\Theta} \sim \mathcal{N}(\boldsymbol{m},\boldsymbol{\Sigma})$ so that
-% $$P(\boldsymbol{\theta}) = \frac{\exp\left(-(\boldsymbol{\theta}-\boldsymbol{m})^T\boldsymbol{\Sigma}^{-1}(\boldsymbol{\theta}-\boldsymbol{m})/2\right)}{\sqrt{(2\pi)^d\lvert \det(\boldsymbol{\Sigma})\rvert }}.$$
-% This example uses the absolute and relative error metric \eqref{eq:h_abs_and_rel}. Notice that the number of samples required to approximate each coefficient is different. 
-% \lstinputlisting[caption={Bayesian Logistic Regression},style=Python,label={py:blr}]{python/blr.txt}
+Listing \ref{py:blr} performs Bayesian logistic regression in QMCPy
+%on the Haberman's Survival Dataset retrieved from the UCI Machine Learning Repository \cite{uci_ml_repo}
+. Here we use a normal prior $\boldsymbol{\Theta} \sim \mathcal{N}(\boldsymbol{m},\boldsymbol{\Sigma})$ so that
+$$P(\boldsymbol{\theta}) = \frac{\exp\left(-(\boldsymbol{\theta}-\boldsymbol{m})^T\boldsymbol{\Sigma}^{-1}(\boldsymbol{\theta}-\boldsymbol{m})/2\right)}{\sqrt{(2\pi)^d\lvert \det(\boldsymbol{\Sigma})\rvert }}.$$
+This example uses the absolute and relative error metric \eqref{eq:h_abs_and_rel}. Notice that the number of samples required to approximate each coefficient is different. 
+
+\lstinputlisting[caption={Bayesian Logistic Regression},style=Python,label={py:blr}]{python/blr.txt}
 
 \subsection{Sensitivity Indices}
 
@@ -365,54 +407,69 @@ Sensitivity analysis quantifies how uncertainty in a functions output may be att
     \tilde{f}(\boldsymbol{x}) = \sum_{u \subseteq 1:d} \tilde{f}_u(\boldsymbol{x}_u) 
     \label{eq:fanova}
 \end{equation}
-\cite[Appendix A]{mcbook}. The orthogonality of sub-functions enables the variance of $\tilde{f}$ to be decomposed into the sum of variances of sub-functions. Specifically, denoting the variance of $\tilde{f}$ by $\sigma^2$, we may write $\sigma^2 = \sum_{u \subseteq 1:d} \sigma^2_u$ where $\sigma^2_u$ is the variance of sub-function $\tilde{f}_u$. The sub-variance $\sigma_u$ directly quantifies the variance of $\tilde{f}$ attributable to inputs $u \subseteq 1:d$.  The \emph{closed, total Sobol' indices}
-\begin{align*}
-    \underline{\tau}_u^2 &= \sum_{v \subseteq u} \sigma^2_v = \int_{[0,1]^{2d}} f(\boldsymbol{x})[f(\boldsymbol{x}_{u_j},\boldsymbol{z}_{-{u_j}})-f(\boldsymbol{z})]\mathrm{d}\boldsymbol{x}\mathrm{d}\boldsymbol{z}, \\ 
-    \overline{\tau}_u^2 &= \sum_{v \cap u \neq \emptyset} \sigma^2_v = \frac{1}{2}\int_{[0,1]^{2d}} [f(\boldsymbol{z})-f(\boldsymbol{x}_u,\boldsymbol{z}_{-{u_j}})]^2\mathrm{d}\boldsymbol{x}\mathrm{d}\boldsymbol{z}
+\cite[Appendix A]{mcbook}. The orthogonality of sub-functions enables the variance of $\tilde{f}$ to be decomposed into the sum of variances of sub-functions. Specifically, denoting the variance of $\tilde{f}$ by $\sigma^2$, we may write
+\begin{equation*}
+    \sigma^2 = \sum_{u \subseteq 1:d} \sigma^2_u
+\end{equation*}
+where $\sigma^2_u$ is the variance of sub-function $\tilde{f}_u$. The sub-variance $\sigma_u$ directly quantifies the variance of $\tilde{f}$ attributable to inputs $u \subseteq 1:d$.  The \emph{closed and total Sobol' indices},
+\begin{equation*}
+    \underline{\tau}_u^2 = \sum_{v \subseteq u} \sigma^2_v \quad \text{and} \quad 
+    \overline{\tau}_u^2 = \sum_{v \cap u \neq \emptyset} \sigma^2_v,
     \label{eq:sobol_indices}
-\end{align*}
-quantify the variance attributable to subsets of $u$ and subsets containing $u$ respectively. Here the notation $(\boldsymbol{x}_{u},\boldsymbol{z}_{-u})$ denotes a point where the value at index $1 \leq j \leq d$ is $x_j$ if $j \in u$ and $z_j$ otherwise. The \emph{closed, total sensitivity indices} $\underline{s}_u = \underline{\tau}_u^2/\sigma^2$, $\overline{s}_u = \overline{\tau}_u^2/\sigma^2$ normalize the Sobol' indices to quantify the proportion of variance explained by a given subset of inputs. 
+\end{equation*}
+quantify the variance attributable to subsets of $u$ and subsets containing $u$ respectively. The \emph{sensitivity indices},
+\begin{equation*}
+    \underline{s}_u = \underline{\tau}_u^2/\sigma^2 \quad \text{and} \quad 
+    \overline{s}_u = \overline{\tau}_u^2/\sigma^2,
+    \label{eq:sensitivity_indices_og}
+\end{equation*}
+normalize the Sobol' indices to quantify the proportion of variance explained by a given subset of inputs. 
 
-Suppose one is interested in computing the closed and total sensitivity indices of $\tilde{f}$ at $u_1,\dots,u_c \subseteq 1:d$. Then we may choose the individual solutions $\boldsymbol{\mu} \in \mathbb{R}^{(2, 3, c)}$ so that
-%for $j=1,\dots,c$
-% \begin{equation}
-% \begin{aligned}
-%     \mu_{11j} &= \underline{\tau}_{u_j}^2 = \int_{[0,1]^{2d}} f(\boldsymbol{x})[f(\boldsymbol{x}_{u_j},\boldsymbol{z}_{-{u_j}})-f(\boldsymbol{z})]\mathrm{d}\boldsymbol{x}\mathrm{d}\boldsymbol{z} \\
-%     \mu_{21j} &= \overline{\tau}_{u_j}^2 = \frac{1}{2}\int_{[0,1]^{2d}} [f(\boldsymbol{z})-f(\boldsymbol{x}_u,\boldsymbol{z}_{-{u_j}})]^2\mathrm{d}\boldsymbol{x}\mathrm{d}\boldsymbol{z} \\
-%     \mu_{12j} &= \mu_{22j} = \int_{[0,1]^{d}} f(\boldsymbol{x})\mathrm{d}\boldsymbol{x}, \\
-%     \mu_{13j} &= \mu_{23j} = \int_{[0,1]^{d}} f^2(\boldsymbol{x})\mathrm{d}\boldsymbol{x}, \\
-%     s_{1j} &= \underline{s}_{u_j} = \frac{\underline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{11j}}{\mu_{13j}-\mu_{12j}^2}, \\
-%     s_{2j} &= \overline{s}_{u_j} = \frac{\overline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{21j}}{\mu_{23j}-\mu_{22j}^2}.  
-% \end{aligned}
-% \label{eq:mu_si}
-% \end{equation}
-% In \eqref{eq:mu_si}, 
-$\boldsymbol{\mu}_1$ and $\boldsymbol{\mu}_2$ contain values for the closed and  total sensitivity indices respectively; $\boldsymbol{\mu}_{11}$ and $\boldsymbol{\mu}_{21}$ contain the closed and total Sobol' indices respectively; $\boldsymbol{\mu}_{i2}$ and $\boldsymbol{\mu}_{i3}$ contain first and second moments respectively for $i \in \{1,2\}$, again opting for duplicated estimates to enable more economic function evaluation. For the combined solutions $\boldsymbol{s} \in \mathbb{R}^{(2, c)}$, $\boldsymbol{s}_1$ contains closed sensitivity indices while $\boldsymbol{s}_2$ contains contains total sensitivity indices. 
+Suppose one is interested in computing the closed and total sensitivity indices of $\tilde{f}$ at $u_1,\dots,u_c \subseteq 1:d$.  Then we may choose the individual solutions $\boldsymbol{\mu} \in \mathbb{R}^{(2, 3, c)}$ and combined solutions $\boldsymbol{s} \in \mathbb{R}^{(2, c)}$ so that for $j=1,\dots,c$
+\begin{equation}
+\begin{aligned}
+    \mu_{11j} &= \underline{\tau}_{u_j}^2 = \int_{[0,1]^{2d}} f(\boldsymbol{x})[f(\boldsymbol{x}_{u_j},\boldsymbol{z}_{-{u_j}})-f(\boldsymbol{z})]\mathrm{d}\boldsymbol{x}\mathrm{d}\boldsymbol{z} \\
+    \mu_{21j} &= \overline{\tau}_{u_j}^2 = \frac{1}{2}\int_{[0,1]^{2d}} [f(\boldsymbol{z})-f(\boldsymbol{x}_u,\boldsymbol{z}_{-{u_j}})]^2\mathrm{d}\boldsymbol{x}\mathrm{d}\boldsymbol{z} \\
+    \mu_{12j} &= \mu_{22j} = \int_{[0,1]^{d}} f(\boldsymbol{x})\mathrm{d}\boldsymbol{x}, \\
+    \mu_{13j} &= \mu_{23j} = \int_{[0,1]^{d}} f^2(\boldsymbol{x})\mathrm{d}\boldsymbol{x}, \\
+    s_{1j} &= \underline{s}_{u_j} = \frac{\underline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{11j}}{\mu_{13j}-\mu_{12j}^2}, \\
+    s_{2j} &= \overline{s}_{u_j} = \frac{\overline{\tau}_{u_j}^2}{\sigma^2} = \frac{\mu_{21j}}{\mu_{23j}-\mu_{22j}^2}.  
+\end{aligned}
+\label{eq:mu_si}
+\end{equation}
+Here the notation
+\begin{equation*}
+    (\boldsymbol{x}_{u},\boldsymbol{z}_{-u}) = \left(\begin{aligned}x_{j}, \quad & j \in u \\ z_{j}, \quad & j \notin u \end{aligned}\right)_{j=1}^{d}
+\end{equation*}
+denotes a point with inputs $u$ from $\boldsymbol{x}$ and inputs $-u=(1:d)\cap u^c$ from $\boldsymbol{z}$. In \eqref{eq:mu_si}, $\boldsymbol{\mu}_1$ and $\boldsymbol{\mu}_2$ contain values for the closed and  total sensitivity indices respectively; $\boldsymbol{\mu}_{11}$ and $\boldsymbol{\mu}_{21}$ contain the closed and total Sobol' indices respectively; $\boldsymbol{\mu}_{i2}$ and $\boldsymbol{\mu}_{i3}$ contain first and second moments respectively for $i \in \{1,2\}$, again opting for duplicated estimates to enable more economic function evaluation. For the combined solutions, $\boldsymbol{s}_1$ contains closed sensitivity indices while $\boldsymbol{s}_2$ contains contains total sensitivity indices. 
 
 Bounds from individual to combined solutions may be propagated via $\boldsymbol{C}^-,\boldsymbol{C}^+:\mathbb{R}^{(2, 3, c)} \to \mathbb{R}^{(2, c)}$ defined for $i \in \{1,2\}$ and $j \in \{1,\dots,c\}$  by  
 \begin{align*}
     C_{ij}^-(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+) 
-    %= \text{clip}\left(\min_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} \frac{\mu_{i1j}}{\mu_{i3j}-\mu_{i2j}^2}\right) \\
-    = \begin{cases} 
+    &= \text{clip}\left(\min_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} \frac{\mu_{i1j}}{\mu_{i3j}-\mu_{i2j}^2}\right) \\
+    &= \begin{cases} 
         \text{clip}\left(\min\left(\frac{\mu_{i1j}^-}{\mu_{i3j}^+-\left(\mu_{i2j}^-\right)^2},\frac{\mu_{i1j}^-}{\mu_{i3j}^+-\left(\mu_{i2j}^+\right)^2}\right)\right), & \mu_{i3j}^- - \left(\mu_{i2j}^\pm\right)^2 >0 \\
         0, &\text{else}
-     \end{cases} %\\
-    % C_{ij}^+(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+) 
-    % &= \text{clip}\left(\max_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} \frac{\mu_{i1j}}{\mu_{i3j}-\mu_{i2j}^2}\right) \\
-    % &= \begin{cases} 
-    %     \text{clip}\left(\max\left(\frac{\mu_{i1j}^+}{\mu_{i3j}^--\left(\mu_{i2j}^-\right)^2},\frac{\mu_{i1j}^+}{\mu_{i3j}^--\left(\mu_{i2j}^+\right)^2}\right)\right), & \mu_{i3j}^- - \left(\mu_{i2j}^\pm\right)^2 >0 \\
-    %     1, &\text{else}
-    % \end{cases}
+    \end{cases} \\
+    C_{ij}^+(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+) 
+    &= \text{clip}\left(\max_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} \frac{\mu_{i1j}}{\mu_{i3j}-\mu_{i2j}^2}\right) \\
+    &= \begin{cases} 
+        \text{clip}\left(\max\left(\frac{\mu_{i1j}^+}{\mu_{i3j}^--\left(\mu_{i2j}^-\right)^2},\frac{\mu_{i1j}^+}{\mu_{i3j}^--\left(\mu_{i2j}^+\right)^2}\right)\right), & \mu_{i3j}^- - \left(\mu_{i2j}^\pm\right)^2 >0 \\
+        1, &\text{else}
+    \end{cases}
 \end{align*}
-with $C^+_{ij}(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+)$ defined similarly and where $\text{clip}(\cdot) = \min(1,\max(0,\cdot))$ restricts values between 0 and 1. Above we have used the facts that sensitivity indices are between $0$ and $1$, the variance of $\tilde{f}$ is non-negative, and Sobol' indices are non-negative. Moreover, the dependency function $\boldsymbol{D}:\{\text{True},\text{False}\}^{(2, c)} \to \{\text{True},\text{False}\}^{(2, 3, c)}$ may be defined by broadcasting shapes so that for any $(1,1,1) \leq (i,j,k) \leq (2,3,c)$ we have $D_{ikj}(\boldsymbol{b}^{(\boldsymbol{s})}) = b_{ij}^{(\boldsymbol{s})}$. 
+where $\text{clip}(\cdot) = \min(1,\max(0,\cdot))$ restricts values between 0 and 1. Above we have used the facts that sensitivity indices are between $0$ and $1$, the variance of $\tilde{f}$ is non-negative, and Sobol' indices are non-negative. 
 
-The QMCPy implementation further generalize to allow objective functions $\tilde{\boldsymbol{f}}: (0,1)^{d} \to \mathbb{R}^{\tilde{\boldsymbol{d}}_{\boldsymbol{\mu}}}$ so that $\boldsymbol{d}_{\boldsymbol{\mu}} = (2,3,c,\tilde{\boldsymbol{d}}_{\boldsymbol{\mu}})$ and $\boldsymbol{d}_{\boldsymbol{s}} = (2,c,\tilde{\boldsymbol{d}}_{\boldsymbol{\mu}})$. Here the notation of nested vectors implies, for example, that  $(2,c,(5,6)) =(2,c,5,6)$.
+Moreover, the dependency function $\boldsymbol{D}:\{\text{True},\text{False}\}^{(2, c)} \to \{\text{True},\text{False}\}^{(2, 3, c)}$ may be defined by broadcasting shapes so that for any $(1,1,1) \leq (i,j,k) \leq (2,3,c)$ we have  $$D_{ikj}\left(\boldsymbol{b}^{(\boldsymbol{s})}\right) = b_{ij}^{(\boldsymbol{s})}.$$
+In the QMCPy implementation we further generalize to allow objective functions $\tilde{\boldsymbol{f}}: (0,1)^{d} \to \mathbb{R}^{\tilde{\boldsymbol{d}}_{\boldsymbol{\mu}}}$ so that $\boldsymbol{d}_{\boldsymbol{\mu}} = (2,3,c,\tilde{\boldsymbol{d}}_{\boldsymbol{\mu}})$ and $\boldsymbol{d}_{\boldsymbol{s}} = (2,c,\tilde{\boldsymbol{d}}_{\boldsymbol{\mu}})$. Here the notation of nested vectors implies, for example, that  $(2,c,(5,6)) =(2,c,5,6)$.
 
 Sensitivity indices present an important special case for computational complexity. Say our QMC algorithm takes $2^m$ total samples to accurately approximate closed and total sensitivity indices for $u_1,\dots,u_c \subseteq 1:d$. Then the computational cost is $\$(\tilde{\boldsymbol{f}})(2+c)2^m$ since every time our sensitivity index function is evaluated at $(\boldsymbol{x},\boldsymbol{z}) \in [0,1]^{2d}$ we must evaluate the users objective function at $\boldsymbol{x}$, $\boldsymbol{z}$, and $(\boldsymbol{x}_{u_j},\boldsymbol{z}_{-{u_j}})$ for $j=1,\dots,c$. Also note that when $\tilde{\boldsymbol{f}}$ is defined to take samples in  $[0,1)^{d}$ to outcomes in $\mathbb{R}^{\tilde{\boldsymbol{d}}_{\boldsymbol{\mu}}}$, sensitivity index approximation requires a wrapper taking samples in $[0,1)^{2d}$ to outcomes in $\mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$. This transform is done automatically in QMCPy as exemplified later in this section. 
 
 If a user is only interested in approximating singleton sensitivity indices, $u_j = \{j\}$ for $j=1,\dots,d$, then it is possible to reduce the cost from $\$(\tilde{\boldsymbol{f}})(2+d)2^m$ to $\$(\tilde{\boldsymbol{f}})2^{m+1}$ using order $1$ replicated designs \cite{alex2008comparison,tissot2015randomized}. Such designs have been extended to  digital sequences in \cite{replicated_designs_sobol_seq} and utilized for sensitivity index approximation in \cite{reliable_sobol_indices_approx}. In the future, we plan to optimize QMCPy to utilize replicated designs when the opportunity arises.
 
-As a simple example, let us consider the expected value of the Ishigami function \cite{ishigami1990importance}
+\subsubsection{Ishigami Function}
+
+Let us consider the expected value of the Ishigami function \cite{ishigami1990importance}
 \begin{equation}
     g(\boldsymbol{T}) = (1+bT_3^4)\sin(T_1)+a\sin^2(T_2)
     \label{eq:ishigami}
@@ -433,12 +490,20 @@ where $\boldsymbol{T} \sim \mathcal{U}(-\pi,\pi)^3$ and $a=7$, $b=0.1$ as in \ci
     \label{fig:ishigami}
 \end{figure}
 
-In another example, we compute sensitivity indices of a neural network classifier for the Iris dataset retrieved from the UCI Machine Learning Repository \cite{uci_ml_repo}. This example was inspired by a similar approximation in \cite{hoyt2021efficient}. The Iris dataset consists of input features sepal length (\textbf{SL}), sepal width (\textbf{SW}), petal length (\textbf{PL}), and petal width (\textbf{PW}), all in centimeters, from which an Iris is to be classified as either the \emph{setosa}, \emph{versicolor}, or \emph{virginica} species. We begin by fitting a neural network classifier \cite{he2015delving} which takes in input features and outputs a size $3$ vector of probabilities for each species summing to $1$. Taking the argument maximum among these three probabilities gives a species prediction. On a held out portion of the dataset the neural network attains 98\% classification accuracy and may therefore be deemed a high quality surrogate for the true relation between input features and species classification. 
+\subsubsection{Neural Network Classifier of Iris Species}
 
-Our problem is to quantify, for each species, the variability in the classification probability attributed to a set of inputs. In other words, we would like to compute the sensitivity indices for each species probability. 
-%In Listing \ref{py:nn} below we compute all sensitivity indices with the help of the scikit-learn package \cite{scikit-learn} for splitting off a holdout dataset and training the neural network classifier. 
-Here $\boldsymbol{d}_{\boldsymbol{\mu}} = (2,3,14,3)$ and $\boldsymbol{d}_{\boldsymbol{s}} = (2,14,3)$ since we have $3$ classes, $14$ sensitivity indies of interest, and we are computing both the closed and total sensitivity indices. Figure \ref{fig:nn_si} visualizes closed sensitivity index approximations. 
-%\lstinputlisting[caption={Neural Network Sensitivity Indices},style=Python,label={py:nn}]{python/nn.txt}
+In this example we compute sensitivity indices of a neural network classifier for the Iris dataset retrieved from the UCI Machine Learning Repository \cite{uci_ml_repo}. This example was inspired by a similar approximation in \cite{hoyt2021efficient}. The Iris dataset consists of input features
+\begin{itemize}
+    \item SL: sepal length (cm),
+    \item SW: sepal width (cm),
+    \item PL: petal length (cm),
+    \item PW: petal width (cm)
+\end{itemize}
+from which an Iris is to be classified as either the \emph{setosa}, \emph{versicolor}, or \emph{virginica} species. We begin by fitting a neural network classifier \cite{he2015delving} which takes in input features and outputs a size $3$ vector of probabilities for each species summing to $1$. Taking the argument maximum among these three probabilities gives a species prediction. On a held out portion of the dataset the neural network attains 98\% classification accuracy and may therefore be deemed a high quality surrogate for the true relation between input features and species classification. 
+
+Our problem is to quantify, for each species, the variability in the classification probability attributed to a set of inputs. In other words, we would like to compute the sensitivity indices for each species probability. In Listing \ref{py:nn} below we compute all sensitivity indices with the help of the scikit-learn package \cite{scikit-learn} for splitting off a holdout dataset and training the neural network classifier. Note that $\boldsymbol{d}_{\boldsymbol{\mu}} = (2,3,14,3)$ and $\boldsymbol{d}_{\boldsymbol{s}} = (2,14,3)$ since we have $3$ classes, $14$ sensitivity indies of interest, and we are computing both the closed and total sensitivity indices. Figure \ref{fig:nn_si} visualizes closed sensitivity index approximations. 
+
+\lstinputlisting[caption={Neural Network Sensitivity Indices},style=Python,label={py:nn}]{python/nn.txt}
 
 \begin{figure}[t]
     \centering

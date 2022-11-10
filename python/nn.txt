@@ -9,7 +9,7 @@ true_measure =  qp.Uniform(sampler,
 fun = qp.CustomFun(
     true_measure = true_measure,
     g = lambda x,compute_flags: mlpc.predict_proba(x),
-    rho = 3)
+    dimension_indv = 3)
 si_fun = qp.SensitivityIndices(fun,indices="all")
 qmc_algo = qp.CubQMCNetG(si_fun,abs_tol=.005)
 nn_sis,nn_sis_data = qmc_algo.integrate()
