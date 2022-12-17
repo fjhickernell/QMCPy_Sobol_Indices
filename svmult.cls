@@ -1,4 +1,4 @@
-% SVMULT DOCUMENT CLASS -- version 5.5 (23-Nov-18)
+% SVMULT DOCUMENT CLASS -- version 5.9 (08-Sep-21)
 % Springer Verlag global LaTeX2e support for multi authored books
 %%
 %%
@@ -19,7 +19,7 @@
 %%   Right brace   \}     Tilde         \~}
 %%
 \NeedsTeXFormat{LaTeX2e}[1995/12/01]
-\ProvidesClass{svmult}[2018/01/11 v5.5
+\ProvidesClass{svmult}[2021/09/08 v5.9
 ^^JSpringer Verlag global LaTeX document class for multi authored books]
 % Options
 % citations
@@ -1012,8 +1012,8 @@ passing it to article class \MessageBreak
 \newcommand{\upi}{\allmodesymb{\greeksym}{p}}
 \newcommand{\utau}{\allmodesymb{\greeksym}{t}}
 % redefines the \vec accent to a bold character - if desired
-\def\fig@type{arrow}% temporarily abused
-\AtBeginDocument{\ifx\vec@style\fig@type\else
+\def\vec@type{arrow}% temporarily abused
+\AtBeginDocument{\ifx\vec@style\vec@type\else
 \@ifundefined{vec@style}{%
  \def\vec#1{\ensuremath{\mathchoice
                      {\mbox{\boldmath$\displaystyle\mathbf{#1}$}}
@@ -1172,7 +1172,7 @@ passing it to article class \MessageBreak
  \def\contentsname{Inhaltsverzeichnis}%
  \def\corollaryname{Korollar}%
 %\def\definitionname{Definition}%
- \def\emailname{E-mail}%
+ \def\emailname{E-Mail}%
  \def\examplename{Beispiel}%
  \def\exercisename{\"Ubung}%
  \def\figurename{Abb.}%
@@ -2379,6 +2379,7 @@ to\z@{\kern0.55\wd0\vrule\@height0.45\ht0\hss}\box0}}}}
 \RequirePackage[x11names]{xcolor}
 
 \definecolor{trailer}{gray}{0.9}
+\definecolor{example}{gray}{0.85}
 \definecolor{question}{gray}{0.8}
 \definecolor{important}{gray}{0.75}
 \definecolor{warning}{gray}{0.7}
@@ -2402,6 +2403,9 @@ to\z@{\kern0.55\wd0\vrule\@height0.45\ht0\hss}\box0}}}}
 
 \newenvironment{trailer}[1]{\ignorespaces\def\stmtopen##1{##1}%
 \formtmp{trailer}{#1}}{\par\noindent\textcolor{trailer}{\rule{\columnwidth}{1pt}}\vskip2pt\par\addvspace{\baselineskip}}%
+
+\renewenvironment{example}[1]{\ignorespaces\def\stmtopen##1{##1}%
+\formtmp{example}{#1}}{\par\noindent\textcolor{example}{\rule{\columnwidth}{1pt}}\vskip2pt\par\addvspace{\baselineskip}}%
 
 \renewenvironment{question}[1]{\ignorespaces\def\stmtopen##1{##1}%
 \formtmp{question}{\ \circledmark[white]{\textcolor{black}{\sf\bfseries?}}{\kern6pt}#1}}{\par\noindent\textcolor{question}{\rule{\columnwidth}{1pt}}\vskip2pt\par\addvspace{\baselineskip}}%
