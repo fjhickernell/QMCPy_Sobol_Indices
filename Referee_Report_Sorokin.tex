@@ -18,8 +18,9 @@
 \usepackage{booktabs}
 \usepackage{amsthm}
 
-\newcommand{\Referee}[1]{{\color{blue} #1}}
-\newcommand{\MISCComment}[1]{{\color{red} #1}}
+\newcommand{\RefereeTODO}[1]{{\color{red} #1 \newline}}
+\newcommand{\Referee}[1]{{\color{blue} #1 \newline}}
+\newcommand{\MISCComment}[1]{{\color{purple} #1 \newline}}
 
 \title{Response to Referee}
 \author{Aleksei G. Sorokin, J. Rathinavel}
@@ -29,70 +30,72 @@
 
 \maketitle    
 
+\begin{itemize}
+    \item \MISCComment{switch CMC to MC and delineate between MC and QMC throughout}
+\end{itemize}
+
 We thank the referee for their valuable  feedback. We have incorporated all suggestions into the updated draft. 
 
 \section{Abstract}
 
 \begin{itemize}
-    \item \Referee{I would not say "Monte Carlo methods present an *efficient* approach for
-  approximating the expected value of a random variable."; maybe replace
-  "efficient" by "convenient"?}
-    \item \Referee{``... vector functions of multiple expectations'': this seems to indicate twice the same; or is there still a function applied to the vector of expectations afterwards? Actually it is: I suggest the authors make more clear at the beginning of the abstract what they mean with ``vector functions of integrals''.}
-    \item \Referee{I suggest the authors also refer explicitly to QMC in the abstract, maybe be saying that when they say Monte Carlo that this includes QMC?}
-    \item \Referee{Maybe the title is not the best possible title for this article; it might be better to explicitly refer to how error estimators for the individual approximations are propagated to the error estimators for the vector valued function of expectations.}
+    \item \Referee{I would not say "Monte Carlo methods present an *efficient* approach for approximating the expected value of a random variable."; maybe replace "efficient" by "convenient"?}We made the replacement.
+    \item \Referee{``... vector functions of multiple expectations'': this seems to indicate twice the same; or is there still a function applied to the vector of expectations afterwards? Actually it is: I suggest the authors make more clear at the beginning of the abstract what they mean with ``vector functions of integrals''.}The sentence is reworded to now end with ``supports adaptive sampling to satisfy error criteria for functions of a common vector of expectations''.
+    \item \Referee{I suggest the authors also refer explicitly to QMC in the abstract, maybe be saying that when they say Monte Carlo that this includes QMC?}The article  now uses Monte Carlo in the classic sense of IID Monte Carlo (what we called Crude Monte Carlo). Quasi-Monte Carlo no longer falls under the umbrella of Monte Carlo.  We now mention both MC and QMC in the first sentence of the abstract. 
+    \item \Referee{Maybe the title is not the best possible title for this article; it might be better to explicitly refer to how error estimators for the individual approximations are propagated to the error estimators for the vector valued function of expectations.}The title is changed to better reflect a focus on error prorogation and explicitly mention Quasi-Monte Carlo. 
 \end{itemize}
 
 \section{Section 1}
 
 \begin{itemize}
-    \item \Referee{I would not call the function $f$ a ``simulation'', see also later. This word is used throughout the article.}
-    \item \Referee{It is not clear if the assumption is that $\vec{f}$ can really be interpreted as $\vec{d}_{\vec{\mu}}$ more or less ``independent'' functions, or not. E.g. in Algorithm 1 it is assumed that I can choose to only calculate certain output elements of $\vec{f}$, but maybe $\vec{f}$ is the discretized solution to a PDE and so, even if I only need the value at one node, I will have to calculate the values at all nodes. I am assuming both of these situations are fine, but the authors might want to clarify this.}
-    \item \Referee{"... is described *in* Section 6 ..."}
+    \item \RefereeTODO{I would not call the function $f$ a ``simulation'', see also later. This word is used throughout the article.}
+    \item \RefereeTODO{It is not clear if the assumption is that $\vec{f}$ can really be interpreted as $\vec{d}_{\vec{\mu}}$ more or less ``independent'' functions, or not. E.g. in Algorithm 1 it is assumed that I can choose to only calculate certain output elements of $\vec{f}$, but maybe $\vec{f}$ is the discretized solution to a PDE and so, even if I only need the value at one node, I will have to calculate the values at all nodes. I am assuming both of these situations are fine, but the authors might want to clarify this.}
+    \item \RefereeTODO{"... is described *in* Section 6 ..."}
 \end{itemize}
 
 \section{Section 2}
 
 \begin{itemize}
-    \item \Referee{``LD sequences implemented in base 2'': remove the ``implemented''.} 
+    \item \RefereeTODO{``LD sequences implemented in base 2'': remove the ``implemented''.} 
 \end{itemize}
 
 \section{Section 3}
 
 \begin{itemize}
-    \item \Referee{Since the discussion in the paper only discusses first order convergence for QMC the remark that lattice schemes are worse since they require ``periodicity'' is incorrect. Randomly shifted lattice rules give provable order 1 for the function assumed in this manuscript, without any periodization. Using tent-transformed lattices even gives order 2 if the function is sufficiently smooth (without requiring ``periodicity''). So I suggest the authors change or update the last paragraph in this section.}
-    \item \Referee{Reference [26] seems to be an unpublished reference.}
+    \item \RefereeTODO{Since the discussion in the paper only discusses first order convergence for QMC the remark that lattice schemes are worse since they require ``periodicity'' is incorrect. Randomly shifted lattice rules give provable order 1 for the function assumed in this manuscript, without any periodization. Using tent-transformed lattices even gives order 2 if the function is sufficiently smooth (without requiring ``periodicity''). So I suggest the authors change or update the last paragraph in this section.}
+    \item \RefereeTODO{Reference [26] seems to be an unpublished reference.}
 \end{itemize}
 
 \section{Section 4}
 
-\Referee{I think I do not understand this section, so the authors will need to rewrite
+\RefereeTODO{I think I do not understand this section, so the authors will need to rewrite
 this section. They can be helped by some of my questions}
 
 \begin{itemize}
-    \item \Referee{Please rewrite / reorder the beginning of section 4. Start with restating that you are computing $s = C(\vec{\mu})$, then state the desired $\alpha^{(s)}$, and then state how for every multi-index $\vec{k}$ you can have bounds as in (2). Currently the order is very confusing.}
-    \item \Referee{Maybe this section can be formalized into a lemma.}
-    \item \Referee{For equations (2) and (3): what is the benefit of writing this for any multi-index $\vec{k}$? Why not just write this for $\vec{\mu}$?}
-    \item \Referee{Also: in the rhs of (3) there is no $\vec{k}$ and this evaluates to a scalar; so I guess there is something wrong with this formula as the authors say "individual uncertainty levels" while they are the same for every $\vec{k}$.}
-    \item \Referee{This is my understanding of $\vec{\mu} \in \mathbb{R}^{\vec{d}_{\vec{\mu}}}$: this is just the "reshape" into a multi-dimensional array of $L = \prod(\vec{d}_{\vec{\mu}})$ expectations. So e.g. it could be that we have 12 expectations and that they are arranged into an array of 2x6 or maybe 2x2x3.}
-    \item \Referee{Then when the authors write $\mu_{\vec{k}}$ for some multi-index $\vec{k}$ I interpret this as the corresponding index of the expectation in that multi-dimensional array.}
-    \item \Referee{In this way I interpret (2) as making a statement about a particular expectation, the one with index $\vec{k}$, to be in a certain confidence interval with probability $1 - \alpha_{\vec{k}}^{(\vec{\mu})}$.}
-    \item \Referee{All these probabilities are gathered together again in a multi-dimensional array $\vec{\alpha}^{(\vec{\mu})}$. And according to my interpretation of (3) this is a constant array.}
-    \item \Referee{Equation (4) then states what the probability is of all the individual confidence bounds to hold all at the same time. This is done through saying that the probability of the confidence interval failing for expectation $\vec{k}$ is given by $\alpha_{\vec{k}}^{(\vec{\mu})}$, so the probability of all of them failing is the sum which is
+    \item \RefereeTODO{Please rewrite / reorder the beginning of section 4. Start with restating that you are computing $s = C(\vec{\mu})$, then state the desired $\alpha^{(s)}$, and then state how for every multi-index $\vec{k}$ you can have bounds as in (2). Currently the order is very confusing.}
+    \item \RefereeTODO{Maybe this section can be formalized into a lemma.}
+    \item \RefereeTODO{For equations (2) and (3): what is the benefit of writing this for any multi-index $\vec{k}$? Why not just write this for $\vec{\mu}$?}
+    \item \RefereeTODO{Also: in the rhs of (3) there is no $\vec{k}$ and this evaluates to a scalar; so I guess there is something wrong with this formula as the authors say "individual uncertainty levels" while they are the same for every $\vec{k}$.}
+    \item \RefereeTODO{This is my understanding of $\vec{\mu} \in \mathbb{R}^{\vec{d}_{\vec{\mu}}}$: this is just the "reshape" into a multi-dimensional array of $L = \prod(\vec{d}_{\vec{\mu}})$ expectations. So e.g. it could be that we have 12 expectations and that they are arranged into an array of 2x6 or maybe 2x2x3.}
+    \item \RefereeTODO{Then when the authors write $\mu_{\vec{k}}$ for some multi-index $\vec{k}$ I interpret this as the corresponding index of the expectation in that multi-dimensional array.}
+    \item \RefereeTODO{In this way I interpret (2) as making a statement about a particular expectation, the one with index $\vec{k}$, to be in a certain confidence interval with probability $1 - \alpha_{\vec{k}}^{(\vec{\mu})}$.}
+    \item \RefereeTODO{All these probabilities are gathered together again in a multi-dimensional array $\vec{\alpha}^{(\vec{\mu})}$. And according to my interpretation of (3) this is a constant array.}
+    \item \RefereeTODO{Equation (4) then states what the probability is of all the individual confidence bounds to hold all at the same time. This is done through saying that the probability of the confidence interval failing for expectation $\vec{k}$ is given by $\alpha_{\vec{k}}^{(\vec{\mu})}$, so the probability of all of them failing is the sum which is
     $$\sum_{\vec{k}} \alpha_{\vec{k}}^{(\vec{\mu})} = \alpha^{(s)}$$
     So the authors just force all of the individual probabilities to be $L$ times smaller, such that adding all L failure probabilities is equal to $\alpha^{(s)}$. This is equation (4).}
-    \item \Referee{At this point I think this could have all been said in one or two sentences. E.g.: To guarantee ... equation (4) ... it is sufficient to make the probability of not being in the correct confidence interval for each of the individual expectations $L$ times smaller where $L$ is the total number of expectations to estimate. I do not understand why the notation has to be so complicated.}
-    \item \Referee{In the last paragraph of this section: ``then use vectorized, scalar MC algorithms to find individual bounds $[\vec{\mu}^-, \vec{\mu}^+]$ satisfying (2) ...'': I do not understand the ``vectorized, scalar'', and I think the authors meant to write ``to find approximations for the different $\mu_{\vec{k}}$'s such that ...???...''; what is meant with the ``individual bounds'' and ``$[\vec{\mu}^-, \vec{\mu}^+]$''?}
-    \item \Referee{At the end of this section I start to see part of my confusion rests in the fact that the authors write $\vec{\mu}$ here as the true value, but in $[\vec{\mu}^-, \vec{\mu}^+]$ is where the calculated values are. Maybe the word usage of ``solution'' in the beginning of section 4 is not such a good choice as it suggested to me that it my confusing as to whether the word "solution" is used for the ``approximation'' or for the ``true value''.} 
-    \item \Referee{In light of what happens in Section 6 later: I suggest the authors make a graphical illustration as to how values from $\vec{\mu}$ end up in combined values in $\vec{s}$ and as to how the dependency function $\vec{D}$ captures this. In that same graphical illustration it should be clear which are the ``true values'' and how the algorithms obtain ``intervals'' which then get combined into computed intervals for the combined approximations. I think it is best to not use the word "solution" anywhere in this context.}
+    \item \RefereeTODO{At this point I think this could have all been said in one or two sentences. E.g.: To guarantee ... equation (4) ... it is sufficient to make the probability of not being in the correct confidence interval for each of the individual expectations $L$ times smaller where $L$ is the total number of expectations to estimate. I do not understand why the notation has to be so complicated.}
+    \item \RefereeTODO{In the last paragraph of this section: ``then use vectorized, scalar MC algorithms to find individual bounds $[\vec{\mu}^-, \vec{\mu}^+]$ satisfying (2) ...'': I do not understand the ``vectorized, scalar'', and I think the authors meant to write ``to find approximations for the different $\mu_{\vec{k}}$'s such that ...???...''; what is meant with the ``individual bounds'' and ``$[\vec{\mu}^-, \vec{\mu}^+]$''?}
+    \item \RefereeTODO{At the end of this section I start to see part of my confusion rests in the fact that the authors write $\vec{\mu}$ here as the true value, but in $[\vec{\mu}^-, \vec{\mu}^+]$ is where the calculated values are. Maybe the word usage of ``solution'' in the beginning of section 4 is not such a good choice as it suggested to me that it my confusing as to whether the word "solution" is used for the ``approximation'' or for the ``true value''.} 
+    \item \RefereeTODO{In light of what happens in Section 6 later: I suggest the authors make a graphical illustration as to how values from $\vec{\mu}$ end up in combined values in $\vec{s}$ and as to how the dependency function $\vec{D}$ captures this. In that same graphical illustration it should be clear which are the ``true values'' and how the algorithms obtain ``intervals'' which then get combined into computed intervals for the combined approximations. I think it is best to not use the word "solution" anywhere in this context.}
 \end{itemize}
 
 \section{Section 5}
 
 \begin{itemize}
-    \item \Referee{For equation (6) I think it is better to write this as
+    \item \RefereeTODO{For equation (6) I think it is better to write this as
     $$\sup_{s \in [s^-, s^+]} |s - \hat{s}| \le h^{(\epsilon)}(s)$$
   Otherwise inattentive readers might think $s$ is the true solution.}
-  \item \Referee{``i.e '' $\to$ ``i.e.''}
+  \item \RefereeTODO{``i.e '' $\to$ ``i.e.''}
 \end{itemize}
 
 \section{Section 6}
@@ -100,55 +103,55 @@ this section. They can be helped by some of my questions}
 \subsection{Algorithm 1}
 
 \begin{itemize}
-    \item \Referee{The word ``simulation'' for $f$ might be confusing.}
-    \item \Referee{To me it is not clear if ``Require'' is the same as ``Input'' or if it is a pre-condition for calling this algorithm that needs to be satisfied. Clearly $f$ is an input, and I think all the ``require'' lines refer to inputs to be specified by the user. The confusing part comes from the fact that also the post-conditions of the algorithm are specified. E.g. ``... satisfy $P(\vec{s}_{\vec{l}} \in [s_{\vec{l}}^-, s_{\vec{l}}^+]) \ge 1 -\alpha_{\vec{l}}^{(\vec{s})}$''.}
-    \item \Referee{Am I required to provide $\vec{C}^-$ and $\vec{C}^+$ or is this assumed to be done by some interval arithmetic package?}
-    \item \Referee{Or is this not possible since $\hat{s}_{\vec{l}}$ is not just $C_l([\vec{\mu}^-,\vec{\mu}^+])$?}
-    \item \Referee{In the comments: write ``stopping flags'' instead of ``flags'' (2 times).}
-    \item \Referee{The algorithm says to set ${\vec{\alpha}}^{(\vec{\mu})}$ ``as described in Section 6''; this is not described in section 6?}
-    \item \Referee{At the end of the algorithm the authors return $\vec{s}^-$ as $\hat{\vec{s}}^-$, the same remark for $\vec{s}^+$. I guess this is from previous notation in which the $\hat{}$'s denote ``computed'' values from the integral approximations.}
+    \item \RefereeTODO{The word ``simulation'' for $f$ might be confusing.}
+    \item \RefereeTODO{To me it is not clear if ``Require'' is the same as ``Input'' or if it is a pre-condition for calling this algorithm that needs to be satisfied. Clearly $f$ is an input, and I think all the ``require'' lines refer to inputs to be specified by the user. The confusing part comes from the fact that also the post-conditions of the algorithm are specified. E.g. ``... satisfy $P(\vec{s}_{\vec{l}} \in [s_{\vec{l}}^-, s_{\vec{l}}^+]) \ge 1 -\alpha_{\vec{l}}^{(\vec{s})}$''.}
+    \item \RefereeTODO{Am I required to provide $\vec{C}^-$ and $\vec{C}^+$ or is this assumed to be done by some interval arithmetic package?}
+    \item \RefereeTODO{Or is this not possible since $\hat{s}_{\vec{l}}$ is not just $C_l([\vec{\mu}^-,\vec{\mu}^+])$?}
+    \item \RefereeTODO{In the comments: write ``stopping flags'' instead of ``flags'' (2 times).}
+    \item \RefereeTODO{The algorithm says to set ${\vec{\alpha}}^{(\vec{\mu})}$ ``as described in Section 6''; this is not described in section 6?}
+    \item \RefereeTODO{At the end of the algorithm the authors return $\vec{s}^-$ as $\hat{\vec{s}}^-$, the same remark for $\vec{s}^+$. I guess this is from previous notation in which the $\hat{}$'s denote ``computed'' values from the integral approximations.}
 \end{itemize}
 
 \subsection{Other Section 6}
 
 \begin{itemize}
-    \item \Referee{``Moreover,*space missing* $\vec{D}$ may be used ...'': space missing; and this is not very clear, I would have expected this to be explained in Section 4, but I am confused in Section 4. I see that this might be were the authors are referring to from the algorithm, but also that is not very clear. How will I do this? Please give formulas if possible. It should at least be more prominently present if you are referring to this from the algorithm.}
+    \item \RefereeTODO{``Moreover,*space missing* $\vec{D}$ may be used ...'': space missing; and this is not very clear, I would have expected this to be explained in Section 4, but I am confused in Section 4. I see that this might be were the authors are referring to from the algorithm, but also that is not very clear. How will I do this? Please give formulas if possible. It should at least be more prominently present if you are referring to this from the algorithm.}
 \end{itemize}
 
 \section{Section 7}
 
 \begin{itemize}
-    \item \Referee{Reference [12] seems to be just an arxiv preprint, there must be a better source to cite.}
-    \item \Referee{``are the rows of argmax ...'': argmax will just return one element; here it is confusing as you do argmax over a square domain, but even then it should just return one row (or one column depending on how you define this). Argmax implies some kind of looping, but $\vec{Z}$ is not defined (since it is an element of this square domain). It would help if you first say what $\alpha$ is, namely it is a function which considers q vectors $\vec{z}$ at the same time; but you could resolve this easily by writing $\alpha(\vec{w}_1, \ldots,\vec{w}_q)$ and then $\mathrm{argmax}_{\vec{w}_1,\ldots,\vec{w}_q \in [0, 1]^d}$ $\alpha(\vec{w}_1, \ldots, \vec{w}_q)$.}
-    \item \Referee{The vectors $\vec{z}_1, ...$ in the previous paragraph are over $[0, 1]^\nu$, here they seem to be from $[0, 1]^d$; please write explicitly and if necessary correct.}
-    \item \Referee{``posterior mean *and* covariance'' (instead of a comma).}
-    \item \Referee{``at points $\vec{Z}$'': I would suggest writing this as ``at points $\vec{w}_1,\ldots,\vec{w}_q$ given the data at the points $\vec{z}_1,\ldots,\vec{z}_N$''.}
-    \item \Referee{The authors suddenly go one-dimensional when explaining QEI.}
-    \item \Referee{Should the ``q'' in ``q-Expected'' be in math mode?}
-    \item \Referee{From the next paragraph on you can introduce the notation $\vec{Z}$ to group the new points.}
-    \item \Referee{Am I understanding correctly that $c$ in the example is like $32^2$?}
-    \item \Referee{Write $\vec{\theta} \in \vec{\Theta}$ in the first line of Section 7.2?}
-    \item \Referee{Do the $\vec{S}$ after the Bayes formula need to be $\vec{\theta}$?}
-    \item \Referee{Specify the dimensionality of $\vec{\Theta} \subseteq \mathbb{R}^{d_s}$?}
-    \item \Referee{``posterior mean of $\vec{\theta}$''?}
-    \item \Referee{I started reading this section under the impression that $\vec{\Theta}$ was the domain of $\vec{\theta}$ and that there is some distribution on $\vec{\Theta}$. But there seems to be confusion with the authors whether they wanted to write $\vec{\theta}$ or $\vec{\Theta}$.}
-    \item \Referee{Why do the authors opt to calculate $\mu_{1,k}$ explicitly for each $k$ while they are the same for all $k$? I do not understand the ``removes economic function evaluation in favor of reduced storage''. What is the bottle neck? Please explain.}
-    \item \Referee{Is [26] a published reference?}
-    \item \Referee{``The closed, total Sobol' indices'': the comma reads strange, maybe replace by ``and''?}
-    \item \Referee{Explain the notation $(\vec{\varphi})$.}
-    \item \Referee{Figure 3: please increase font size.}
+    \item \RefereeTODO{Reference [12] seems to be just an arxiv preprint, there must be a better source to cite.}
+    \item \RefereeTODO{``are the rows of argmax ...'': argmax will just return one element; here it is confusing as you do argmax over a square domain, but even then it should just return one row (or one column depending on how you define this). Argmax implies some kind of looping, but $\vec{Z}$ is not defined (since it is an element of this square domain). It would help if you first say what $\alpha$ is, namely it is a function which considers q vectors $\vec{z}$ at the same time; but you could resolve this easily by writing $\alpha(\vec{w}_1, \ldots,\vec{w}_q)$ and then $\mathrm{argmax}_{\vec{w}_1,\ldots,\vec{w}_q \in [0, 1]^d}$ $\alpha(\vec{w}_1, \ldots, \vec{w}_q)$.}
+    \item \RefereeTODO{The vectors $\vec{z}_1, ...$ in the previous paragraph are over $[0, 1]^\nu$, here they seem to be from $[0, 1]^d$; please write explicitly and if necessary correct.}
+    \item \RefereeTODO{``posterior mean *and* covariance'' (instead of a comma).}
+    \item \RefereeTODO{``at points $\vec{Z}$'': I would suggest writing this as ``at points $\vec{w}_1,\ldots,\vec{w}_q$ given the data at the points $\vec{z}_1,\ldots,\vec{z}_N$''.}
+    \item \RefereeTODO{The authors suddenly go one-dimensional when explaining QEI.}
+    \item \RefereeTODO{Should the ``q'' in ``q-Expected'' be in math mode?}
+    \item \RefereeTODO{From the next paragraph on you can introduce the notation $\vec{Z}$ to group the new points.}
+    \item \RefereeTODO{Am I understanding correctly that $c$ in the example is like $32^2$?}
+    \item \RefereeTODO{Write $\vec{\theta} \in \vec{\Theta}$ in the first line of Section 7.2?}
+    \item \RefereeTODO{Do the $\vec{S}$ after the Bayes formula need to be $\vec{\theta}$?}
+    \item \RefereeTODO{Specify the dimensionality of $\vec{\Theta} \subseteq \mathbb{R}^{d_s}$?}
+    \item \RefereeTODO{``posterior mean of $\vec{\theta}$''?}
+    \item \RefereeTODO{I started reading this section under the impression that $\vec{\Theta}$ was the domain of $\vec{\theta}$ and that there is some distribution on $\vec{\Theta}$. But there seems to be confusion with the authors whether they wanted to write $\vec{\theta}$ or $\vec{\Theta}$.}
+    \item \RefereeTODO{Why do the authors opt to calculate $\mu_{1,k}$ explicitly for each $k$ while they are the same for all $k$? I do not understand the ``removes economic function evaluation in favor of reduced storage''. What is the bottle neck? Please explain.}
+    \item \RefereeTODO{Is [26] a published reference?}
+    \item \RefereeTODO{``The closed, total Sobol' indices'': the comma reads strange, maybe replace by ``and''?}
+    \item \RefereeTODO{Explain the notation $(\vec{\varphi})$.}
+    \item \RefereeTODO{Figure 3: please increase font size.}
 \end{itemize}
 
 \section{Section 8}
 
 \begin{itemize}
-    \item \Referee{The authors suddenly write the more common ``MC'' instead of ``CMC''.}
+    \item \RefereeTODO{The authors suddenly write the more common ``MC'' instead of ``CMC''.}
 \end{itemize}
 
 \section{References}
 
 \begin{itemize}
-    \item \Referee{Please check the typesetting of the references.}
+    \item \RefereeTODO{Please check the typesetting of the references.}
 \end{itemize}
 
 \end{document}
