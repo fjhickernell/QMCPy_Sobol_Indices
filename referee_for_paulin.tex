@@ -1,0 +1,33 @@
+\documentclass{article}[12pt]
+\usepackage[a4paper, margin=1in]{geometry}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\title{Generator Matrices by Solving Integer Linear Programs}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+The figures are excellent and really helped illustrate the concepts. You may want to add some more background on your previous work [8] so readers have a more complete view of MatBuilder's current capabilities. We are also interested how this scales to larger $m$ or $p$ and any potential future work for this project. Some other minor suggestions are below. 
+
+\begin{itemize}
+    \item Section 2.1: ``The structure of the $(t,m,s)$-nets lends itself to the generalization to low discrepancy sequences.'' Wording is a bit confusing here. 
+    \item Fig 4: Perhaps flip the blue and orange here to be consistent with other figures where it specifies the $x$-axis partition and then the $y$ axis partition. 
+    \item Section 2.2: ``This results in rectangular matrices $M_{\boldsymbol{k}_j}$ defining a mapping between indices and elementary of volume $\frac{1}{b^{m-t}}$.'' Should be ``elementary intervals''? 
+    \item Fig 5: add ``(right)'' at the end of the first sentence in the caption. 
+    \item Theorem 1: Should the $d_j$ here be $k_j$? It seems $\boldsymbol{d}$ is used for elementary intervals and $\boldsymbol{k}$ is used for generating matrices. 
+    \item Section 2.2: Are the full rank conditions in terms of $\mathbb{F}_b$ addition / multiplication? 
+    \item Fig 6: Unclear meaning of ``stratified'' and ``weak 1 net u4 ...'' or ``weak 1 net u2 ...''. May benefit from a discussion of previous work in [8].
+    \item Section 3.5: ``hard uniformity constraints enforce a non-zero to guarantee the design constraints''. Maybe ``non-zero determinent''?
+    \item Section 4.1 : ``we observe that it does not obtain comparable sample qualitiy in the projections'' - Typo ``qualitiy''.
+    \item Section 4.2: ``The constraint system empowers to play with the target $t$-values.'' Maybe ``empowers the user''?
+    \item Fig 9: Why use $b=3$ and $2187$ samples in MatBuilder when comparing to $b=2$ and $2048$ samples for Sobol' and LatNetBuilder? Unfair to compare discrepancy at powers of 3 for Sobol' and LatNetBuilder nets optimized for powers of 2? 
+    \item Fig 9: Legends on lower right plot are a bit hard to read, maybe use a larger shared legend? Perhaps remove the random trend? It contrast nicely with the intelligent construction methods, but it makes the remaining 3 methods hard to distinguish and may even hide MatBuilder's advantage. 
+    \item Section 4.2: ``Hence, the lower is $t$, the more greedy expansion steps of the matrix columns and rows as $m$ increases.'' Unclear wording. 
+    \item Fig 10: What is jittered? Maybe use sec instead of msec, easier to digest. For plot (b), are the times taken from a single construction or rerun separately for each $m$? 
+\end{itemize}
+
+\end{document}
