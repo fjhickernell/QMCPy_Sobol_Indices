@@ -33,15 +33,21 @@
 \MISCComment{
     \section*{TODO for Authors}
     \begin{itemize}
+        \item Clear up how to set $\boldsymbol{\alpha}^{(\boldsymbol{s})}$ 
+        \item ``In light of what happens in Section 6 later: I suggest the authors make a graphical illustration as to how values from $\vec{\mu}$ end up in combined values in $\vec{s}$ and as to how the dependency function $\vec{D}$ captures this. In that same graphical illustration it should be clear which are the ``true values'' and how the algorithms obtain ``intervals'' which then get combined into computed intervals for the combined approximations. I think it is best to not use the word ``solution'' anywhere in this context.
+        \item consistently use ``QOI'' for solution and ``approximation'' for the hat values
         \item switch CMC to MC and delineate between MC and QMC throughout
         \item Update bibliography bibitems to include \texttt{hoeffding1992class}, \texttt{snoek2012practical}, \texttt{rasmussen2006gaussian}
         \item Increase font size of figures. 
         \item Typeset references 
+        \item Check equation numbers
         \item Get rid of all warnings 
-        \item Reread all for consistency. 
+        \item Add acknowledgement to referee
+        \item Reread all for consistency.
+        \item Check responses to referee align with updated text
     \end{itemize}}
 
-We thank the referee for their valuable  feedback. We have incorporated all suggestions into the updated draft. 
+We thank the referee for their careful reading and valuable feedback. We have incorporated all suggestions into the updated draft. 
 
 \section*{Abstract}
 
@@ -75,25 +81,24 @@ We thank the referee for their valuable  feedback. We have incorporated all sugg
 
 \section*{Section 4}
 
-\RefereeTODO{I think I do not understand this section, so the authors will need to rewrite
-this section. They can be helped by some of my questions}
+\Referee{I think I do not understand this section, so the authors will need to rewrite this section. They can be helped by some of my questions}We have rewritten this section to significantly improve the overcomplicated notation and presentation. 
 
 \begin{itemize}
-    \item \RefereeTODO{Please rewrite / reorder the beginning of section 4. Start with restating that you are computing $s = C(\vec{\mu})$, then state the desired $\alpha^{(s)}$, and then state how for every multi-index $\vec{k}$ you can have bounds as in (2). Currently the order is very confusing.}
-    \item \RefereeTODO{Maybe this section can be formalized into a lemma.}
-    \item \RefereeTODO{For equations (2) and (3): what is the benefit of writing this for any multi-index $\vec{k}$? Why not just write this for $\vec{\mu}$?}
-    \item \RefereeTODO{Also: in the rhs of (3) there is no $\vec{k}$ and this evaluates to a scalar; so I guess there is something wrong with this formula as the authors say "individual uncertainty levels" while they are the same for every $\vec{k}$.}
-    \item \RefereeTODO{This is my understanding of $\vec{\mu} \in \mathbb{R}^{\vec{d}_{\vec{\mu}}}$: this is just the "reshape" into a multi-dimensional array of $L = \prod(\vec{d}_{\vec{\mu}})$ expectations. So e.g. it could be that we have 12 expectations and that they are arranged into an array of 2x6 or maybe 2x2x3.}
-    \item \RefereeTODO{Then when the authors write $\mu_{\vec{k}}$ for some multi-index $\vec{k}$ I interpret this as the corresponding index of the expectation in that multi-dimensional array.}
-    \item \RefereeTODO{In this way I interpret (2) as making a statement about a particular expectation, the one with index $\vec{k}$, to be in a certain confidence interval with probability $1 - \alpha_{\vec{k}}^{(\vec{\mu})}$.}
-    \item \RefereeTODO{All these probabilities are gathered together again in a multi-dimensional array $\vec{\alpha}^{(\vec{\mu})}$. And according to my interpretation of (3) this is a constant array.}
-    \item \RefereeTODO{Equation (4) then states what the probability is of all the individual confidence bounds to hold all at the same time. This is done through saying that the probability of the confidence interval failing for expectation $\vec{k}$ is given by $\alpha_{\vec{k}}^{(\vec{\mu})}$, so the probability of all of them failing is the sum which is
+    \item \Referee{Please rewrite / reorder the beginning of section 4. Start with restating that you are computing $s = C(\vec{\mu})$, then state the desired $\alpha^{(s)}$, and then state how for every multi-index $\vec{k}$ you can have bounds as in (2). Currently the order is very confusing.} We have moved the desired inequality to the beginning of the section and refactored the starting paragraph to align with your suggestion. 
+    \item \Referee{Maybe this section can be formalized into a lemma.}This section is more a method description the obvious decision to scale tolerances based on Boole's inequality. We feel the description is now clear, but are happy to rewrite into a lemma if things are still unclear.   
+    \item \Referee{For equations (2) and (3): what is the benefit of writing this for any multi-index $\vec{k}$? Why not just write this for $\vec{\mu}$?} The MC and QMC algorithms can get error bounds on scalar individual solutions. We need bounds on the vector of individual solutions. 
+    \item \Referee{Also: in the rhs of (3) there is no $\vec{k}$ and this evaluates to a scalar; so I guess there is something wrong with this formula as the authors say "individual uncertainty levels" while they are the same for every $\vec{k}$.}In the case of a single combined solution, all individual uncertainty levels will be set to the same scalar. However, when there are multiple combined solutions, as discussed later, the individual uncertainty levels may be different to accommodate different desired combined uncertainties.  
+    \item \Referee{This is my understanding of $\vec{\mu} \in \mathbb{R}^{\vec{d}_{\vec{\mu}}}$: this is just the ``reshape'' into a multi-dimensional array of $L = \prod(\vec{d}_{\vec{\mu}})$ expectations. So e.g. it could be that we have 12 expectations and that they are arranged into an array of 2x6 or maybe 2x2x3.}Correct. Many modern programming languages, e.g. Python or Julia, support multi-dimensional arrays to store data in a more intuitive structure and ease indexing access of elements. We have generalized to multi-dimensional array notation in the paper to match. 
+    \item \Referee{Then when the authors write $\mu_{\vec{k}}$ for some multi-index $\vec{k}$ I interpret this as the corresponding index of the expectation in that multi-dimensional array.}Correct. 
+    \item \Referee{In this way I interpret (2) as making a statement about a particular expectation, the one with index $\vec{k}$, to be in a certain confidence interval with probability $1 - \alpha_{\vec{k}}^{(\vec{\mu})}$.}Correct. This is what the scalar (Q)MC algorithms in the previous section are built to handle. 
+    \item \Referee{All these probabilities are gathered together again in a multi-dimensional array $\vec{\alpha}^{(\vec{\mu})}$. And according to my interpretation of (3) this is a constant array.}Correct. But it will not necessarily be constant when we introduce multiple combined solutions that potentially different combined uncertainty thresholds.
+    \item \Referee{Equation (4) then states what the probability is of all the individual confidence bounds to hold all at the same time. This is done through saying that the probability of the confidence interval failing for expectation $\vec{k}$ is given by $\alpha_{\vec{k}}^{(\vec{\mu})}$, so the probability of all of them failing is the sum which is
     $$\sum_{\vec{k}} \alpha_{\vec{k}}^{(\vec{\mu})} = \alpha^{(s)}$$
-    So the authors just force all of the individual probabilities to be $L$ times smaller, such that adding all L failure probabilities is equal to $\alpha^{(s)}$. This is equation (4).}
-    \item \RefereeTODO{At this point I think this could have all been said in one or two sentences. E.g.: To guarantee ... equation (4) ... it is sufficient to make the probability of not being in the correct confidence interval for each of the individual expectations $L$ times smaller where $L$ is the total number of expectations to estimate. I do not understand why the notation has to be so complicated.}
-    \item \RefereeTODO{In the last paragraph of this section: ``then use vectorized, scalar MC algorithms to find individual bounds $[\vec{\mu}^-, \vec{\mu}^+]$ satisfying (2) ...'': I do not understand the ``vectorized, scalar'', and I think the authors meant to write ``to find approximations for the different $\mu_{\vec{k}}$'s such that ...???...''; what is meant with the ``individual bounds'' and ``$[\vec{\mu}^-, \vec{\mu}^+]$''?}
-    \item \RefereeTODO{At the end of this section I start to see part of my confusion rests in the fact that the authors write $\vec{\mu}$ here as the true value, but in $[\vec{\mu}^-, \vec{\mu}^+]$ is where the calculated values are. Maybe the word usage of ``solution'' in the beginning of section 4 is not such a good choice as it suggested to me that it my confusing as to whether the word "solution" is used for the ``approximation'' or for the ``true value''.} 
-    \item \RefereeTODO{In light of what happens in Section 6 later: I suggest the authors make a graphical illustration as to how values from $\vec{\mu}$ end up in combined values in $\vec{s}$ and as to how the dependency function $\vec{D}$ captures this. In that same graphical illustration it should be clear which are the ``true values'' and how the algorithms obtain ``intervals'' which then get combined into computed intervals for the combined approximations. I think it is best to not use the word "solution" anywhere in this context.}
+    So the authors just force all of the individual probabilities to be $L$ times smaller, such that adding all L failure probabilities is equal to $\alpha^{(s)}$. This is equation (4).}Correct. 
+    \item \Referee{At this point I think this could have all been said in one or two sentences. E.g.: To guarantee ... equation (4) ... it is sufficient to make the probability of not being in the correct confidence interval for each of the individual expectations $L$ times smaller where $L$ is the total number of expectations to estimate. I do not understand why the notation has to be so complicated.}We have greatly simplified the notation and presentation at the beginning of this section. 
+    \item \Referee{In the last paragraph of this section: ``then use vectorized, scalar MC algorithms to find individual bounds $[\vec{\mu}^-, \vec{\mu}^+]$ satisfying (2) ...'': I do not understand the ``vectorized, scalar'', and I think the authors meant to write ``to find approximations for the different $\mu_{\vec{k}}$'s such that ...???...''; what is meant with the ``individual bounds'' and ``$[\vec{\mu}^-, \vec{\mu}^+]$''?}Removed ``vectorized,'' as we are simply using scalar (Q)MC algorithms to get individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$. 
+    \item \Referee{At the end of this section I start to see part of my confusion rests in the fact that the authors write $\vec{\mu}$ here as the true value, but in $[\vec{\mu}^-, \vec{\mu}^+]$ is where the calculated values are. Maybe the word usage of ``solution'' in the beginning of section 4 is not such a good choice as it suggested to me that it my confusing as to whether the word "solution" is used for the ``approximation'' or for the ``true value''.}We have modified the paper to consistently use ``QOI'' instead of solution and consistently use ``approximation'' for the hat values. 
+    \item \Referee{In light of what happens in Section 6 later: I suggest the authors make a graphical illustration as to how values from $\vec{\mu}$ end up in combined values in $\vec{s}$ and as to how the dependency function $\vec{D}$ captures this. In that same graphical illustration it should be clear which are the ``true values'' and how the algorithms obtain ``intervals'' which then get combined into computed intervals for the combined approximations. I think it is best to not use the word ``solution'' anywhere in this context.}We have removed ``solution'' in favor of ``individual means'' throughout. A plot as described in your comment has been added to the Bayesian posterior mean example and referenced within Section 6.
 \end{itemize}
 
 \section*{Section 5}

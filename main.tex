@@ -37,7 +37,7 @@
 
 
 \begin{document}
-\title*{Error Propagation for Functions of Multiple Expectations in Monte Carlo and Quasi-Monte Carlo}
+\title*{On Bounding and Approximating Functions of Multiple Expectations using Quasi-Monte Carlo}
 \authorrunning{Sorokin \& Rathinavel}
 \author{Aleksei G. Sorokin \and Jagadeeswaran Rathinavel}
 \institute{
@@ -127,30 +127,31 @@ We first recommend using the  \texttt{CubQMC\{Net,Lattice\}G} QMC algorithms if 
 
 \section{Bounds on a Scalar Combined Solution} \label{SoRa_sec:comb_sol_approx}
 
-In this section, we connect errors in individual solutions to error in a combined solution. The MC and QMC algorithms in the previous section may be vectorized in a straightforward manner to attain error bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ on a multi-dimensional array of individual solutions $\boldsymbol{\mu} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ so that 
+This section discusses how to compute error bounds $[s^-,s^+]$ on $s = C(\boldsymbol{\mu})$ so that 
 \begin{equation}
-    P(\mu_{\boldsymbol{k}} \in [\mu_{\boldsymbol{k}}^-,\mu_{\boldsymbol{k}}^+]) \geq 1-\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}  \qquad \text{for any multi-index }\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}.
+    P(s \in [s^-,s^+]) \geq 1-\alpha^{(s)}
+    \label{eq:scalar_comb_desired_ineq}
+\end{equation}
+where $\alpha^{(s)} \in (0,1)$ is a desired combined uncertainty threshold. Here $C: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}$ combines a multi-dimensional array of individual true means $\boldsymbol{\mu} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ into a scalar QOI $s \in \mathbb{R}$. First, we discuss how to set the multi-dimensional array of individual uncertainties $\boldsymbol{\alpha}^{(\boldsymbol{\mu})} \in (0,1)^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ so the resulting individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ contain $\boldsymbol{\mu}$ with confidence at least $1-\alpha^{(s)}$. Then we discuss how the user can use $C$ to determine functions propagating individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ to combined bounds $[s^-,s^+]$ that must also hold with uncertainty below $\alpha^{(s)}$. 
+
+Let $N = \lvert \boldsymbol{d}_{\boldsymbol{\mu}} \rvert$ be the number of elements in a $\mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ array and set each element of $\boldsymbol{\alpha}^{(\boldsymbol{\mu})}$ to the constant $\alpha^{(s)}/ N$. Then Boole's inequality \cite{boole1847mathematical} implies that if $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ are chosen so that
+\begin{equation}
+    P(\mu_{\boldsymbol{k}} \in [\mu_{\boldsymbol{k}}^-,\mu_{\boldsymbol{k}}^+]) \geq 1-\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}  \qquad \text{for any multi-index }\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}
     \label{SoRa_eq:indv_prob_bounds}
 \end{equation}
-Here $\boldsymbol{\alpha}^{(\boldsymbol{\mu})} \in (0,1)^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ is a multi-dimensional array of individual uncertainty levels which are set to 
-\begin{equation}
-    \alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})} = \frac{\alpha^{(s)}}{\prod(\boldsymbol{d}_{\boldsymbol{\mu}})}
-    \label{SoRa_eq:alpha_mu_from_alpha_s} \qquad \text{for all }\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}.
-\end{equation}
-In the above, $\prod(\boldsymbol{d}_{\boldsymbol{\mu}})$ is the product of all entries in $\boldsymbol{d}_{\boldsymbol{\mu}}$, i.e. the number of elements in a $\mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ array, and $\alpha^{(s)} \in (0,1)$ is the desired uncertainty for the bounds $[s^-,s^+]$ on the scalar combined solution $s$. Under this setting, Boole's inequality \cite{boole1847mathematical} implies that whenever \eqref{SoRa_eq:indv_prob_bounds} holds we have
+using the scalar (Q)MC algorithms discussed in the previous section, then  
 \begin{equation}
     P(\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]) \geq 1-\alpha^{(s)}.
     \label{SoRa_eq:indv_prob_bounds_all}
-\end{equation} 
+\end{equation}
 
-Recall that $s = C(\boldsymbol{\mu})$ where $C: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}$. To propagate individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ to combined bounds $[s^-,s^+]$, one defines interval arithmetic \cite{interval_analysis} functions $C^-,C^+: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \times \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}$ so that
+To propagate individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ to combined bounds $[s^-,s^+]$, the user must define interval arithmetic \cite{interval_analysis} functions $C^-,C^+: \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \times \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}} \to \mathbb{R}$ so that
 \begin{equation}
     s^- = C^-(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+) = \min_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} C(\boldsymbol{\mu}), \quad 
     s^+= C^+(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+) = \max_{\boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]} C(\boldsymbol{\mu}).
     \label{SoRa_eq:C_minus_C_plus}
 \end{equation}
-Table \ref{SoRa_table:elementary_ops_Cpm} provides examples of such interval arithmetic functions for some basic operations. In all, given combined uncertainty threshold $\alpha^{(s)}$ we may set individual thresholds $\boldsymbol{\alpha}^{(\boldsymbol{\mu})}$ via \eqref{SoRa_eq:alpha_mu_from_alpha_s} then use vectorized, scalar MC algorithms to find individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ satisfying \eqref{SoRa_eq:indv_prob_bounds} so that \eqref{SoRa_eq:indv_prob_bounds_all} holds. Then setting combined bounds $[s^-,s^+]$ via \eqref{SoRa_eq:C_minus_C_plus} will guarantee we satisfy the desired inequality 
-$$P(s \in [s^-,s^+]) \geq 1-\alpha^{(s)}.$$
+Table \ref{SoRa_table:elementary_ops_Cpm} provides examples of such interval arithmetic functions for some basic operations. In all, given combined uncertainty threshold $\alpha^{(s)}$, we may set all individual thresholds $\boldsymbol{\alpha}^{(\boldsymbol{\mu})}$ to the constant $\alpha^{(s)}/N$ then use scalar (Q)MC algorithms to find individual bounds $[\boldsymbol{\mu}^-,\boldsymbol{\mu}^+]$ satisfying \eqref{SoRa_eq:indv_prob_bounds} so that \eqref{SoRa_eq:indv_prob_bounds_all} holds. Then setting combined bounds $[s^-,s^+]$ via \eqref{SoRa_eq:C_minus_C_plus} will guarantee \eqref{eq:scalar_comb_desired_ineq} holds as desired.
 
 \begin{table}[t]
 \begin{tabular}{r  c  c}
@@ -220,15 +221,11 @@ Theorem \ref{SoRa_thm:shat_opt} below determines an optimal $\hat{s}$ and an equ
 
 In the previous section we assumed that a multi-dimensional array of individual solutions $\boldsymbol{\mu} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ were used to compute a scalar combined solution $s \in \mathbb{R}$. We now relax these assumptions to enable approximation of multi-dimensional combined solutions $\boldsymbol{s} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$. The optimal approximation $\hat{\boldsymbol{s}} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$ and stopping criterion may still be computed by element wise versions of \eqref{SoRa_eq:shat_opt} and \eqref{SoRa_eq:sc}. 
 
-For some integrands is possible to avoid evaluating particular outputs of the integrand $\boldsymbol{f}$ when the affected combined solutions have already been sufficiently approximated. In such cases, the user may enable economical integrand evaluation by defining a dependency function $\boldsymbol{D}: \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{s}}} \to \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ which maps error criterion flags on combined solutions to flags on individual solutions. These individual flags indicate which outputs the integrand is required to compute in the next iteration. Take a simple example where  $\boldsymbol{s}=\boldsymbol{\mu}$, so $\boldsymbol{C}$ and $\boldsymbol{D}$ are the identity function. At some iteration suppose the combined flag at multi-index $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ is $\text{True}$, indicating the combined, and therefore individual, solution at index $\boldsymbol{l}$ has been sufficiently approximated. Then in the next iteration, the function does not need to compute outputs at index $\boldsymbol{l}$.
+For some integrands is possible to avoid evaluating particular outputs of the integrand $\boldsymbol{f}$ when the affected combined solutions have already been sufficiently approximated. In such cases, the user may enable economical integrand evaluation by defining a dependency function $\boldsymbol{D}: \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{s}}} \to \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ which maps error criterion flags on combined solutions to flags on individual solutions. Index $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ is said to depend on index $\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}$ if $\boldsymbol{k}^\text{th}$ entry is $\text{True}$ in the output of evaluating $\boldsymbol{D}$ at the multi-dimensional array with only the $\boldsymbol{l}^\text{th}$ entry set to $\text{True}$
 
-Moreover, $\,\boldsymbol{D}$ may be used to compute individual uncertainty levels $\boldsymbol{\alpha}^{(\boldsymbol{\mu})}$ by adapting \eqref{SoRa_eq:alpha_mu_from_alpha_s} to the number of individual solutions contributing to each combined solution. The idea is to ensures that each combined uncertainty is greater than the sum of all its dependent individual uncertainties. Specifically, let $\boldsymbol{N} \in \mathbb{N}^{\boldsymbol{d}_{\boldsymbol{s}}}$ be the number of dependent individual solutions for each combined solution. For any $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ , $N_{\boldsymbol{l}}$ can be determined by counting the number of $\text{True}$ values resulting from evaluating $\boldsymbol{D}$ at the multi-dimensional array with only the $\boldsymbol{l}^\text{th}$ entry set to $\text{True}$. For any $\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}$ we set 
-\begin{equation}
-    \alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})} = \frac{\alpha_{\boldsymbol{l}_{\boldsymbol{k}}}^{(\boldsymbol{s})}}{N_{\boldsymbol{l}_{\boldsymbol{k}}}}
-    \label{SoRa_eq:alpha_mu_from_alpha_s_vec}
-\end{equation}
-where 
-${\boldsymbol{l}_{\boldsymbol{k}}}$ is the multi-index corresponding to the maximum $\boldsymbol{N}$ among all multi-indices for which the $\boldsymbol{k}^\text{th}$ individual solution is a dependency. 
+The individual flags indicate which outputs the integrand is required to compute in the next iteration. Take a simple example where $\boldsymbol{s}=\boldsymbol{\mu}$, so $\boldsymbol{C}$ and $\boldsymbol{D}$ are the identity function. At some iteration suppose the combined flag at multi-index $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ is $\text{True}$, indicating the combined, and therefore individual, solution at index $\boldsymbol{l}$ has been sufficiently approximated. Then in the next iteration, the function does not need to compute outputs at index $\boldsymbol{l}$.
+
+Moreover, $\,\boldsymbol{D}$ may be used to compute individual uncertainty levels $\boldsymbol{\alpha}^{(\boldsymbol{\mu})}$ in the spirit of Boole's inequality as done in Section \ref{SoRa_sec:comb_sol_approx}. The idea is to ensures that each combined uncertainty is greater than the sum of all its dependent individual uncertainties. Specifically, let $\boldsymbol{N} \in \mathbb{N}^{\boldsymbol{d}_{\boldsymbol{s}}}$ contain the number of dependent individual solutions for each combined solution. That is, for any $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ , $N_{\boldsymbol{l}}$ is the number of indices dependent on $\boldsymbol{l}$. For any $\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}$, if $\boldsymbol{l}$ is dependent on $\boldsymbol{k}$ then $\alpha_{\boldsymbol{l}}^{(\boldsymbol{s})}/N_{\boldsymbol{l}}$ is a candidate for $\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}$. We then set $\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}$ to the minimum amongst all candidates for $\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}$, assuming the candidate set is non-empty.
 
 Algorithm \ref{SoRa_algo:MCStoppingCriterion} details the adaptive, vectorized MC procedure developed throughout this article. Notice that the implementation does not require specifying $\boldsymbol{C}$ despite its use in deriving the necessary $\boldsymbol{C}^-,\boldsymbol{C}^+$ inputs. The cost of this algorithm is concentrated in evaluating the function at an IID or LD sequence. In practice, the run time may be reduced if the users implementation of the integrand can take advantage of not having to compute all outputs at every iteration or through parallel evaluation if the integrand is costly to evaluate.
 
