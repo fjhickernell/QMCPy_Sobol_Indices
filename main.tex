@@ -12,28 +12,7 @@
 \usepackage{algpseudocode}
 \usepackage{algorithm}
 \algrenewcommand\algorithmicrequire{\textbf{Input:}}
-% \usepackage{listings}
-% \lstdefinestyle{Python}{
-%     showstringspaces = false,
-%     language         = Python,
-%     basicstyle       = \small\ttfamily,
-%     morekeywords     = {as},
-%     keywordstyle     = \color{black!70},
-%     stringstyle      = \color{black!35},
-%     commentstyle     = \color{black!35}\ttfamily,
-% 	breaklines       = true,
-% 	postbreak        = \text{$\hookrightarrow$\space},
-% 	alsoletter       = {>,.},
-%     morekeywords     = [2]{>>>,...},
-%     keywordstyle     = [2]\color{black!70}\bfseries}
-% \newcommand{\AGSComment}[1]{{\color{brown} #1}}
-% \newcommand{\JRComment}[1]{{\color{violet}#1}}
-% \newcommand{\FJHComment}[1]{{\color{purple}Fred:  #1}}
-% \newcommand{\CDHJComment}[1]{{\color{royal blue}#1}}
-% \usepackage{biblatex}
-% \addbibresource{main.bib}
-% \usepackage{natbib}
-%\allowdisplaybreaks
+\usepackage{tikz}
 
 
 \begin{document}
@@ -221,11 +200,29 @@ Theorem \ref{SoRa_thm:shat_opt} below determines an optimal $\hat{s}$ and an equ
 
 In the previous section we assumed that a multi-dimensional array of individual solutions $\boldsymbol{\mu} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ were used to compute a scalar combined solution $s \in \mathbb{R}$. We now relax these assumptions to enable approximation of multi-dimensional combined solutions $\boldsymbol{s} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$. The optimal approximation $\hat{\boldsymbol{s}} \in \mathbb{R}^{\boldsymbol{d}_{\boldsymbol{s}}}$ and stopping criterion may still be computed by element wise versions of \eqref{SoRa_eq:shat_opt} and \eqref{SoRa_eq:sc}. 
 
-For some integrands is possible to avoid evaluating particular outputs of the integrand $\boldsymbol{f}$ when the affected combined solutions have already been sufficiently approximated. In such cases, the user may enable economical integrand evaluation by defining a dependency function $\boldsymbol{D}: \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{s}}} \to \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ which maps error criterion flags on combined solutions to flags on individual solutions. Index $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ is said to depend on index $\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}$ if $\boldsymbol{k}^\text{th}$ entry is $\text{True}$ in the output of evaluating $\boldsymbol{D}$ at the multi-dimensional array with only the $\boldsymbol{l}^\text{th}$ entry set to $\text{True}$
+For some integrands $\boldsymbol{f}$ it is possible to avoid evaluating particular outputs when all affected combined solutions have already been sufficiently approximated. In such cases, the user may enable economical integrand evaluation by defining a dependency function $\boldsymbol{D}: \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{s}}} \to \{\text{True},\text{False}\}^{\boldsymbol{d}_{\boldsymbol{\mu}}}$ which maps error criterion flags on combined solutions to flags on individual solutions. Index $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ is said to depend on index $\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}$ if $\boldsymbol{k}^\text{th}$ entry is $\text{True}$ in the output of evaluating $\boldsymbol{D}$ at the multi-dimensional array with only the $\boldsymbol{l}^\text{th}$ entry set to $\text{True}$
 
-The individual flags indicate which outputs the integrand is required to compute in the next iteration. Take a simple example where $\boldsymbol{s}=\boldsymbol{\mu}$, so $\boldsymbol{C}$ and $\boldsymbol{D}$ are the identity function. At some iteration suppose the combined flag at multi-index $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ is $\text{True}$, indicating the combined, and therefore individual, solution at index $\boldsymbol{l}$ has been sufficiently approximated. Then in the next iteration, the function does not need to compute outputs at index $\boldsymbol{l}$.
+The individual flags indicate which outputs the integrand is required to compute in the next iteration. Take a simple example where $\boldsymbol{s}=\boldsymbol{\mu}$, so $\boldsymbol{C}$ and $\boldsymbol{D}$ are the identity function. At some iteration suppose the combined flag at index $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ is $\text{True}$, indicating the combined, and therefore individual, solution at index $\boldsymbol{l}$ has been sufficiently approximated. Then in the next iteration, the function does not need to compute outputs at index $\boldsymbol{l}$.
 
-Moreover, $\,\boldsymbol{D}$ may be used to compute individual uncertainty levels $\boldsymbol{\alpha}^{(\boldsymbol{\mu})}$ in the spirit of Boole's inequality as done in Section \ref{SoRa_sec:comb_sol_approx}. The idea is to ensures that each combined uncertainty is greater than the sum of all its dependent individual uncertainties. Specifically, let $\boldsymbol{N} \in \mathbb{N}^{\boldsymbol{d}_{\boldsymbol{s}}}$ contain the number of dependent individual solutions for each combined solution. That is, for any $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$ , $N_{\boldsymbol{l}}$ is the number of indices dependent on $\boldsymbol{l}$. For any $\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}$, if $\boldsymbol{l}$ is dependent on $\boldsymbol{k}$ then $\alpha_{\boldsymbol{l}}^{(\boldsymbol{s})}/N_{\boldsymbol{l}}$ is a candidate for $\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}$. We then set $\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}$ to the minimum amongst all candidates for $\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}$, assuming the candidate set is non-empty.
+Moreover, $\,\boldsymbol{D}$ may be used to compute individual uncertainty levels $\boldsymbol{\alpha}^{(\boldsymbol{\mu})}$ in the spirit of Boole's inequality as done in Section \ref{SoRa_sec:comb_sol_approx}. The idea is to ensures that each combined uncertainty is greater than the sum of all dependent individual uncertainties. Specifically, let $\boldsymbol{N} \in \mathbb{N}^{\boldsymbol{d}_{\boldsymbol{s}}}$ contain the number of dependent individual solutions for each combined solution. That is, for any $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$, $N_{\boldsymbol{l}}$ is the number of indices dependent on $\boldsymbol{l}$. For any $\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}$, if $\boldsymbol{l}$ is dependent on $\boldsymbol{k}$ then $\alpha_{\boldsymbol{l}}^{(\boldsymbol{s})}/N_{\boldsymbol{l}}$ is a candidate for $\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}$. We then set $\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}$ to the minimum amongst all candidates for $\alpha_{\boldsymbol{k}}^{(\boldsymbol{\mu})}$, assuming the candidate set is non-empty.
+
+While not theoretically required, our implementation practically requires that each $\boldsymbol{1} \leq \boldsymbol{k} \leq \boldsymbol{d}_{\boldsymbol{\mu}}$ be a dependency of exactly one $\boldsymbol{1} \leq \boldsymbol{l} \leq \boldsymbol{d}_{\boldsymbol{s}}$. To illustrate this requirement and the previously discussed dependency structure, let us consider the simple example with two combined solutions $s_1 = \mu_1 + \mu_2$ and $s_2 = \mu_1 + \mu_3$. Suppose after some iteration that $s_1$ is sufficiently approximated and $s_2$ is not. Since $\mu_1$ is a dependency of both $s_1$ and $s_2$, we would like to continue approximating $\mu_1$ to get a better approximation $s_2$. In turn, this would update $s_1$ and potentially make the approximation become insufficient again. This out of sync nature of the sampling occurs because $\mu_1$ is a dependency of more than $1$ combined solution. To remedy this, let $\mu_4 = \mu_1$ and set $s_1 = \mu_4 + \mu_3$. Now each individual solution is a dependency of exactly one combined solution as required. In practice this remedy amounts to copying outputs integrand outputs at index $1$ into index $4$, thus increasing storage requirements in favor of potentially avoiding evaluating outputs at index $2$ and $3$. This dependency structure is illustrated below with dependency function $D(b_1,b_2) = (b_1,b_1,b_2,b_2)$ where $b_1,b_2 \in \{\text{True},\text{False}\}$. 
+
+\begin{figure}
+    \centering
+\begin{tikzpicture}[main/.style = {draw, circle}] 
+    \node at (0,0)  [main,line width=3pt] (1) {$\mu_1$}; 
+    \node at (2,0)  [main,line width=3pt] (2) {$\mu_2$};
+    \node at (4,0)  [main,line width=3pt] (3) {$\mu_3$};
+    \node at (6,0)  [main,line width=3pt] (4) {$\mu_4$};
+    \node at (1,2) [main,line width=3pt] (5) {$s_1$};
+    \node at (5,2) [main,line width=3pt] (6) {$s_2$};
+    \draw[->,line width=3pt] (5) -- (1);
+    \draw[->,line width=3pt] (5) -- (2);
+    \draw[->,line width=3pt] (6) -- (3);
+    \draw[->,line width=3pt] (6) -- (4);
+\end{tikzpicture}
+\end{figure}
 
 Algorithm \ref{SoRa_algo:MCStoppingCriterion} details the adaptive, vectorized MC procedure developed throughout this article. Notice that the implementation does not require specifying $\boldsymbol{C}$ despite its use in deriving the necessary $\boldsymbol{C}^-,\boldsymbol{C}^+$ inputs. The cost of this algorithm is concentrated in evaluating the function at an IID or LD sequence. In practice, the run time may be reduced if the users implementation of the integrand can take advantage of not having to compute all outputs at every iteration or through parallel evaluation if the integrand is costly to evaluate.
 
@@ -333,7 +330,7 @@ A useful quantity of interest is the posterior mean of $\boldsymbol{\Theta}$. In
 $$\mu_{0k} = \mathbb{E}\left[\Theta_k \prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{\Theta})\right], \quad \mu_{1k} = \mathbb{E}\left[\prod_{i=1}^{N} \rho(y_i \mid \boldsymbol{\Theta})\right], \quad \text{and} \quad s_k = \frac{\mu_{0k}}{\mu_{1k}}.$$
 Defining $\boldsymbol{C}^-$ and $\boldsymbol{C}^+$ follow from vectorizing the quotient forms in Table \ref{SoRa_table:elementary_ops_Cpm} while the dependency function $\boldsymbol{D}: \{\text{True},\text{False}\}^{d_{\boldsymbol{s}}} \to \{\text{True},\text{False}\}^{(2, d_{\boldsymbol{s}})}$ is defined by stacking the row vectors of combined flag on top of itself. 
 
-While $\mu_{1k}$ is the same for all $1 \leq k \leq d_{\boldsymbol{s}}$, we opt to keep separate denominator estimates for each coefficient. Maintaining only a single estimate of the denominator would open up the possibility that a coefficient is sufficiently approximated in one iteration and then insufficiently approximated the next due to an unfavorable update in the denominator. In this way, maintaining separate estimates of the denominator favors economic function evaluation in favor of increased storage.
+%While $\mu_{1k}$ is the same for all $1 \leq k \leq d_{\boldsymbol{s}}$, we opt to keep separate denominator estimates for each coefficient. Maintaining only a single estimate of the denominator would open up the possibility that a coefficient is sufficiently approximated in one iteration and then insufficiently approximated the next due to an unfavorable update in the denominator. In this way, maintaining separate estimates of the denominator favors economic function evaluation in favor of increased storage.
 
 % Consider Bayesian logistic regression as a concrete example. Here the dataset contains observations $y_i \in \{0,1\}$ at locations $\boldsymbol{z}_i = \left(z_{i1},\dots,z_{i(d_{\boldsymbol{s}}-1)},1\right)$ for $i=1,\dots,N$ where the last value is $1$ to accommodate an intercept term. The sigmoid likelihood function $\rho(y_i = 1 \mid \boldsymbol{\theta}) = \frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}$ may be used to yield
 % $$P(\boldsymbol{y} \mid \boldsymbol{\theta}) = \prod_{i=1}^N \left(\frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}\right)^{y_i} \left(1-\frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}\right)^{1-y_i} = \prod_{i=1}^N \frac{\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)^{y_i}}{1+\exp(\boldsymbol{\theta}.\boldsymbol{z}_i)}.$$
@@ -421,7 +418,13 @@ Here $\boldsymbol{d}_{\boldsymbol{\mu}} = (2,3,14,3)$ and $\boldsymbol{d}_{\bold
 
 \section{Discussion and Further Work} \label{SoRa_sec:conclusions}
 
-This article has extended adaptive MC and QMC stopping criteria to support approximating multi-dimensional quantities of interest formulated as functions of multi-dimensional expectations. The resulting method is compatible with algorithms providing error bounds which hold with a desired uncertainty based on function evaluations at IID or LD sequences. Our work has been implemented into the open-source QMCPy package and exemplified on problems in machine learning and global sensitivity analysis. In the future we hope to automatically analyze the combining function $\boldsymbol{C}$ to determine propagation functions $\boldsymbol{C}^-$ and $\boldsymbol{C}^+$ as well as the dependency structure encoded in $\boldsymbol{D}$.   
+This article has extended adaptive MC and QMC stopping criteria to support approximating multi-dimensional quantities of interest formulated as functions of multi-dimensional expectations. The resulting method is compatible with algorithms providing error bounds which hold with a desired uncertainty based on function evaluations at IID or LD sequences. Our work has been implemented into the open-source QMCPy package and exemplified on problems in machine learning and global sensitivity analysis. 
+
+In the future we hope to automatically analyze the combining function $\boldsymbol{C}$ to determine propagation functions $\boldsymbol{C}^-$ and $\boldsymbol{C}^+$ as well as the dependency structure encoded in $\boldsymbol{D}$. We also plan to allow dependency structures where combined solutions may depend on common individual solutions.
+
+\section*{Acknowledgements}
+
+The authors are to thank the referee for their valuable feedback.
 
 %\printbibliography
 %\section*{References}
