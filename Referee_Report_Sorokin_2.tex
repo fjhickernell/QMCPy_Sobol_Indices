@@ -1,0 +1,74 @@
+\documentclass{article}[12pt]
+\usepackage[a4paper, margin=1in]{geometry}
+
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsthm}
+
+\newcommand{\RefereeTODO}[1]{{\color{red} #1 \newline}}
+\newcommand{\Referee}[1]{{\color{blue} #1 \newline}}
+\newcommand{\MISCComment}[1]{{\color{purple} #1}}
+
+\title{Response to Referee \#2}
+\author{Aleksei G. Sorokin, J. Rathinavel}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+We again thank the referee for their careful reading and valuable feedback. We have incorporated all suggestions into the updated draft. 
+
+\section*{Introduction}
+
+\begin{itemize}
+    \item \Referee{Introduce QOI before introducing the scalar mean, or at least tell us that this scalar mean is the QOI, and then extend this to a vector valued function of a vector of means in the next sentence.}QOI now introduced in the first sentence before the scalar mean. 
+    \item \Referee{Delete ``encapsulates the randomness of'' and replace by ``, and integrand function''.}Changed.
+    \item \Referee{Then in the next sentence say something like ``However, in many cases the QOI is a more complicated function $\vec{s} \in \mathbb{R}^{\vec{d}_{\vec{s}}}$ of a vector of means $\vec{\mu} = \mathbb{E}[\vec{f}(\vec{X})] \in \mathbb{R}^{\vec{d}_{\vec{\mu}}}.$''}Changed.
+    \item \Referee{``We allow $\vec{s}$ to be *an array-valued function* ...'' (but see next-next
+    comment).}$\boldsymbol{s}$ is an array, not a function
+    \item \Referee{``The integrand *is* ...''}Changed. 
+    \item \Referee{Hmm. Okay now the authors define $\vec{C}$ to be the array-valued function and $\vec{s}$ to be its value... Please update the first reference to $\vec{s}$.}Changed.
+    \item \Referee{Remove the ``and'' at the start of the third bullet, or put it at the end of the previous bullet, after a comma.}Removed the ``and'' linking the second and third points in both the itemized and enumerated lists in the introduction. 
+    \item \Referee{``on *the* mean $\mu$''}Changed. 
+    \item \Referee{I would suggest deleting the ``with uncerainty below ...'' when discussing ``Interval arithmetic functions are used to propagate bounds ...''.}Changed. 
+    \item \Referee{I might consider dropping the word ``combining'' from ``combining function''; as long as the authors always write $\vec{C}$ after it anyway.}Changed.
+    \item \Referee{``When applicable, the dependency function may tell *the integrand* ...'': do the authors mean *the algorithm*? Further: do the authors mean that it is not needed any more to get better approximation to an already existing approximation? ... Yes they do, maybe put that earlier in the sentence.}Reworded the last sentence. 
+    \item \Referee{``Title Suppressed Due to Excessive Length''}Changed running title. 
+\end{itemize}
+
+\section*{Section 2}
+
+\begin{itemize}
+    \item \Referee{``contains the randomness of integrand f'': I think this is a very strange choice of words; I would remove this ``contains the randomness'' as also suggested for Section 1.}Changed.
+\end{itemize}
+
+\section*{Section 4}
+
+\begin{itemize}
+    \item \Referee{Please put a space after the comma in $\vec{C}^-, \vec{C}^+$ (multiple occurrences)}Changed.
+    \item \Referee{I would leave out the ``combining'' for the ``bound combining functions $\vec{C}^-, \vec{C}^+$'' as suggested in my previous remarks.}Changed.
+    \item \Referee{``the user may define the functions $\vec{C}^-, \vec{C}^+$ using interval arithmetic'': will this interval arithmetic also guarantee me that they are mathematically correct intervals (contrary to numerical approximations which might in odd cases be completely off)? If so, then please tell the reader...}We are unsure what you mean by this comment. The user defines $C^-$ and $C^+$ so 
+    $$s \in [C^-(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+),C^+(\boldsymbol{\mu}^-,\boldsymbol{\mu}^+)] \quad\text{whenever}\quad \boldsymbol{\mu} \in [\boldsymbol{\mu}^-,\boldsymbol{\mu}^+].$$
+\end{itemize}
+
+\section*{Section 6}
+
+\begin{itemize}
+    \item \Referee{``The idea is to ensure that each QOI uncertainty threshold'': I thought the QOI was the array, so there needs to be some reference to the entries here...}Reworded this sentence.
+\end{itemize}
+
+\end{document}
